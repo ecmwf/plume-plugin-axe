@@ -1,0 +1,14 @@
+{
+    "plugins": [
+        {   
+            "name": "PluginAreaExtractor",
+            "lib": "plugin_area_extractor",
+            "core-config": {
+                "bounding_box_north_deg": 45, 
+                "bounding_box_south_deg": -45,
+                "bounding_box_east_deg": 140,
+                "bounding_box_west_deg": 50
+            }   
+        } 
+    ]
+}
