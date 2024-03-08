@@ -40,18 +40,37 @@ ExtractionArea::ExtractionArea(double north, double south, double east, double w
 }
 
 ExtractionArea::~ExtractionArea(){
-
 }
 
 
-
+std::ostream& operator<<(std::ostream& ss, const ExtractionArea& obj) {
+    ss << "(north:" << obj.north_ << ",";
+    ss << "south:" << obj.south_ << ",";
+    ss << "east:" << obj.east_ << ",";
+    ss << "west:" << obj.west_ << ")";
+    return ss;
+}
 // ==========================================================================================
 
 
+// ==========================================================================================
+std::ostream& operator<<(std::ostream& ss, const UserRequest& obj) {
+    ss << "{user: " << obj.user_ << ", s3_url: " << obj.s3_url_;
+    ss << ", areas: [";
 
-
-
-
+    int cc = 0;
+    for (const auto& area : obj.areas_) {
+        ss << area;
+        if (cc != obj.areas_.size()-1){
+            ss << ",";
+        }
+        cc++;
+    }
+    ss << "]";
+    ss << "}";
+    return ss;
+}
+// ==========================================================================================
 
 
 // ==========================================================================================
@@ -73,6 +92,35 @@ PluginCoreAreaExtractor::PluginCoreAreaExtractor(const eckit::Configuration& con
 
     // extract user requests from the configuration file
     std::vector<eckit::LocalConfiguration> requests = conf.getSubConfigurations("requests");
+
+    for (const auto& conf_req : requests) {
+
+        std::string user_id = conf_req.getString("user_id");
+        std::string s3_url = conf_req.getString("s3_url");
+        std::vector<eckit::LocalConfiguration> areas = conf_req.getSubConfigurations("extraction_areas");
+
+        UserRequest req(user_id, s3_url);
+
+        for (const auto& area : areas) {
+
+            double north = area.getDouble("north");
+            double south = area.getDouble("south");
+            double east = area.getDouble("east");
+            double west = area.getDouble("west");
+
+            req.push_area(ExtractionArea{north ,south ,east ,west});
+        }
+
+        requests_.push_back(req);
+    }
+
+
+    // print requests
+    for (const auto& req: requests_) {
+        std::cout << req << std::endl;
+    }
+
+
 }
 
 PluginCoreAreaExtractor::~PluginCoreAreaExtractor() {}

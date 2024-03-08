@@ -42,6 +42,8 @@ public:
     double east() { return east_; }
     double west() { return west_; }
 
+    friend std::ostream& operator<<(std::ostream& ss, const ExtractionArea& obj);
+
 private:
     double north_;
     double south_;
@@ -57,11 +59,16 @@ class UserRequest {
 public:
 
     UserRequest(std::string user, std::string s3_url) : user_{user}, s3_url_{s3_url} {}
-    ~UserRequest();
+    ~UserRequest(){};
 
     const std::string& user(){ return user_; }
     const std::string& s3_url(){ return s3_url_; }
+    void push_area(const ExtractionArea& area) { areas_.push_back(area); }
+
+
     const std::vector<ExtractionArea>& areas() {return areas_;}
+
+    friend std::ostream& operator<<(std::ostream& ss, const UserRequest& obj);
 
 private:
 
@@ -94,7 +101,7 @@ private:
     atlas::Field fieldV_;
 
     // user requests
-    std::vector<UserRequest> requests;
+    std::vector<UserRequest> requests_;
     
     atlas::functionspace::StructuredColumns inputFuncSpace_;
 
