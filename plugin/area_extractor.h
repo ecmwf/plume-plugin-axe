@@ -11,6 +11,7 @@
 
 #include <iostream>
 #include <string>
+#include <vector>
 
 #include "atlas/field/Field.h"
 #include "atlas/mesh/Mesh.h"
@@ -23,6 +24,55 @@
 namespace area_extractor {
 
 
+
+// ==========================================================================================
+/**
+ * @brief Extraction Area
+ * 
+ */
+class ExtractionArea {
+
+public:
+
+    ExtractionArea(double north, double south, double east, double west);
+    ~ExtractionArea();
+
+    double north() { return north_; }
+    double south() { return south_; }
+    double east() { return east_; }
+    double west() { return west_; }
+
+private:
+    double north_;
+    double south_;
+    double east_;
+    double west_;
+};
+// ==========================================================================================
+
+
+// ==========================================================================================
+class UserRequest {
+
+public:
+
+    UserRequest(std::string user, std::string s3_url) : user_{user}, s3_url_{s3_url} {}
+    ~UserRequest();
+
+    const std::string& user(){ return user_; }
+    const std::string& s3_url(){ return s3_url_; }
+    const std::vector<ExtractionArea>& areas() {return areas_;}
+
+private:
+
+    std::string user_;
+    std::string s3_url_;
+    std::vector<ExtractionArea> areas_;
+};
+// ==========================================================================================
+
+
+// ==========================================================================================
 class PluginCoreAreaExtractor : public plume::PluginCore {
 public:
     PluginCoreAreaExtractor(const eckit::Configuration& conf);
@@ -43,21 +93,20 @@ private:
     atlas::Field fieldU_;
     atlas::Field fieldV_;
 
-    // Bounding box (all vertical levels)
-    double boundingBoxNorth_;
-    double boundingBoxSouth_;
-    double boundingBoxEast_;
-    double boundingBoxWest_;
-
-    atlas::Mesh outputMesh_;
+    // user requests
+    std::vector<UserRequest> requests;
+    
     atlas::functionspace::StructuredColumns inputFuncSpace_;
-    atlas::FunctionSpace outputFuncSpace_;    
-    atlas::Field outputField_;
+
+    // atlas::Mesh outputMesh_;
+    // atlas::FunctionSpace outputFuncSpace_;    
+    // atlas::Field outputField_;    
 
 };
-// ------------------------------------------------------
+// ==========================================================================================
 
-// ------------------------------------------------------
+
+// ==========================================================================================
 class PluginAreaExtractor : public plume::Plugin {
 
 public:
@@ -82,6 +131,6 @@ public:
 
     virtual std::string plugincoreName() const override { return PluginCoreAreaExtractor::type(); }
 };
-// ------------------------------------------------------
+// ==========================================================================================
 
 }  // namespace area_extractor
