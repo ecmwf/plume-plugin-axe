@@ -45,8 +45,8 @@ private:
     std::vector<std::string> users_;
     std::vector<int> area_idxs_;
     std::vector<int> point_idxs_;
-    std::vector<int> lats_;
-    std::vector<int> lons_;
+    std::vector<double> lats_;
+    std::vector<double> lons_;
     std::vector<int> levs_;
     std::vector<std::string> params_;
     std::vector<FIELD_TYPE_REAL> values_;
