@@ -3,10 +3,10 @@
         {
             "name": "PluginAreaExtractor",
             "lib": "plugin_area_extractor",
-            "core-config": {                
+            "core-config": {
                 "requests": [
                     {
-                        "user_id": "user-1",
+                        "user": "user-1",
                         "extraction_areas": [
                             {"north": 15, "south": -15, "east": 115, "west": 15},
                             {"north": 16, "south": -16, "east": 116, "west": 16},
@@ -15,7 +15,7 @@
                         "s3_url": "s3_url_1"
                     },
                     {
-                        "user_id": "user-2",
+                        "user": "user-2",
                         "extraction_areas": [
                             {"north": 25, "south": -25, "east": 125, "west": 25},
                             {"north": 26, "south": -26, "east": 126, "west": 26},
@@ -24,7 +24,7 @@
                         "s3_url": "s3_url_2"
                     },
                     {
-                        "user_id": "user-3",
+                        "user": "user-3",
                         "extraction_areas": [
                             {"north": 35, "south": -35, "east": 135, "west": 35},
                             {"north": 36, "south": -36, "east": 136, "west": 36},

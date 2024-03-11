@@ -13,6 +13,8 @@
 #include <string>
 #include <vector>
 
+#include "eckit/mpi/Comm.h"
+
 #include "atlas/field/Field.h"
 #include "atlas/mesh/Mesh.h"
 #include "atlas/functionspace/StructuredColumns.h"
@@ -21,8 +23,12 @@
 #include "plume/PluginCore.h"
 #include "plume/Plugin.h"
 
+#include "plugin_types.h"
+
 namespace area_extractor {
 
+
+class UserRequest;
 
 
 // ==========================================================================================
@@ -34,21 +40,33 @@ class ExtractionArea {
 
 public:
 
-    ExtractionArea(double north, double south, double east, double west);
+    ExtractionArea(int area_id,
+                   double north,
+                   double south,
+                   double east,
+                   double west);
+
     ~ExtractionArea();
 
-    double north() { return north_; }
-    double south() { return south_; }
-    double east() { return east_; }
-    double west() { return west_; }
+    int id() const { return area_id_; }
+    double north() const { return north_; }
+    double south() const { return south_; }
+    double east() const { return east_; }
+    double west() const { return west_; }
+
+    bool isPointInside(double lat, double lon) const {
+        return ((lat <= north_) && (lat >= south_) && (lon <= east_) && (lon >= west_));
+    }
 
     friend std::ostream& operator<<(std::ostream& ss, const ExtractionArea& obj);
 
 private:
+    int area_id_;
     double north_;
     double south_;
     double east_;
     double west_;
+
 };
 // ==========================================================================================
 
@@ -61,12 +79,15 @@ public:
     UserRequest(std::string user, std::string s3_url) : user_{user}, s3_url_{s3_url} {}
     ~UserRequest(){};
 
-    const std::string& user(){ return user_; }
-    const std::string& s3_url(){ return s3_url_; }
-    void push_area(const ExtractionArea& area) { areas_.push_back(area); }
+    const std::string& user() const { return user_; }
+    const std::string& s3_url() const { return s3_url_; }
 
+    void add_area(double north, double south, double east, double west) {
+        int area_idx = areas_.size();
+        areas_.push_back(ExtractionArea{area_idx, north, south, east, west});
+    }
 
-    const std::vector<ExtractionArea>& areas() {return areas_;}
+    const std::vector<ExtractionArea>& areas() const {return areas_;}
 
     friend std::ostream& operator<<(std::ostream& ss, const UserRequest& obj);
 
@@ -76,6 +97,53 @@ private:
     std::string s3_url_;
     std::vector<ExtractionArea> areas_;
 };
+// ==========================================================================================
+
+
+// ==========================================================================================
+/**
+ * @brief Class that extracts values according to requests
+ * 
+ */
+class FieldsReader {
+public:
+
+    FieldsReader(std::vector<UserRequest> requests, std::vector<atlas::Field> fields);
+    ~FieldsReader();
+
+    // Read the fields
+    void read();
+
+    void writeFile(int timeStep);
+
+    bool ownsValues();
+
+private:
+
+    void setupStorage(const std::vector<UserRequest>& requests);
+
+private:
+
+    // requested Fields
+    std::vector<atlas::Field> fields_;
+
+    // field of lonlats
+    atlas::Field lonlats_;
+
+    // internal storage
+    int numProcValues_;
+    std::vector<std::string> users_;
+    std::vector<int> area_idxs_;
+    std::vector<int> point_idxs_;
+    std::vector<int> lats_;
+    std::vector<int> lons_;
+    std::vector<int> levs_;
+    std::vector<std::string> params_;
+    std::vector<FIELD_TYPE_REAL> values_;
+
+private:
+};
+
 // ==========================================================================================
 
 
@@ -102,6 +170,9 @@ private:
 
     // user requests
     std::vector<UserRequest> requests_;
+
+    // field reader
+    FieldsReader* reader_;
     
     atlas::functionspace::StructuredColumns inputFuncSpace_;
 
@@ -121,11 +192,24 @@ public:
 
     ~PluginAreaExtractor();
 
+    static std::vector<std::string> requestedFields() {
+        std::vector<std::string> vec = {
+            "u",
+            "v" 
+        };
+        return vec;
+    }
+
     plume::Protocol negotiate() override {
         plume::Protocol protocol;
         protocol.requireAtlasVersion("0.32.0");
-        protocol.requireAtlasField("u");
-        protocol.requireAtlasField("v");
+        protocol.requireInt("NSTEP");
+
+        // Request the necessary Atlas fields
+        for (auto& fld: requestedFields()) {
+            protocol.requireAtlasField(fld);
+        }
+
         return protocol;
     }
 
