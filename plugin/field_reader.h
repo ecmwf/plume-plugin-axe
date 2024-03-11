@@ -24,7 +24,7 @@ public:
     // Read the fields
     void read();
 
-    void writeFile(int timeStep);
+    void writeFile(std::string filename);
 
     bool ownsValues();
 
@@ -39,6 +39,9 @@ private:
 
     // field of lonlats
     atlas::Field lonlats_;
+
+    // ghost mask
+    atlas::Field ghost_;
 
     // internal storage
     int numProcValues_;

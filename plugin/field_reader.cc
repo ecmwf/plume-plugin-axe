@@ -4,7 +4,6 @@
 #include <sstream>
 
 #include "eckit/exception/Exceptions.h"
-#include "eckit/mpi/Comm.h"
 
 #include "atlas/array.h"
 #include "atlas/functionspace/NodeColumns.h"
@@ -19,6 +18,7 @@ FieldsReader::FieldsReader(std::vector<UserRequest> requests, std::vector<atlas:
     numProcValues_{0} {
 
     lonlats_ = fields_[0].functionspace().lonlat();
+    ghost_ = fields_[0].functionspace().ghost();
 
     // here we go through the requests and find points to extract..
     setupStorage(requests);
@@ -34,38 +34,43 @@ void FieldsReader::setupStorage(const std::vector<UserRequest>& requests) {
     for (const auto& field : fields_){
         fieldViewVector.push_back(atlas::array::make_view<const FIELD_TYPE_REAL,2>(field));
     }
+    
     auto lonLatArray = atlas::array::make_view<const double,2>( lonlats_ );
+    auto ghostArray = atlas::array::make_view<int,1>( ghost_ );
+
     double pointLat;
     double pointLon;
 
     int nlevs = fields_[0].levels();
 
     for (int iPt = 0; iPt < lonLatArray.shape(0); iPt++) {
-        pointLon = lonLatArray(iPt, 0);
-        pointLat = lonLatArray(iPt, 1);
 
-        for (const auto& request: requests) {
+        if (!ghostArray(iPt)) {
 
-            for (const auto& area : request.areas()) {
+            pointLon = lonLatArray(iPt, 0);
+            pointLat = lonLatArray(iPt, 1);
 
-                if (area.isPointInside(pointLat, pointLon)) {
-                    for (int iField=0; iField<fields_.size(); iField++){
-                        for (int iLev=0; iLev<nlevs; iLev++){
-                            users_.push_back(request.user());
-                            area_idxs_.push_back(area.id());
-                            point_idxs_.push_back(iPt);
-                            lats_.push_back(pointLat);
-                            lons_.push_back(pointLon);
-                            levs_.push_back(iLev);
-                            params_.push_back(fields_[iField].name());
-                            values_.push_back(fieldViewVector[iField](iPt,iLev));                            
+            for (const auto& request: requests) {
+                for (const auto& area : request.areas()) {
+
+                    if (area.isPointInside(pointLat, pointLon)) {
+                        for (int iField=0; iField<fields_.size(); iField++){
+                            for (int iLev=0; iLev<nlevs; iLev++){
+                                users_.push_back(request.user());
+                                area_idxs_.push_back(area.id());
+                                point_idxs_.push_back(iPt);
+                                lats_.push_back(pointLat);
+                                lons_.push_back(pointLon);
+                                levs_.push_back(iLev);
+                                params_.push_back(fields_[iField].name());
+                                values_.push_back(fieldViewVector[iField](iPt,iLev));
+                            }
                         }
                     }
+                    
                 }
-
             }
         }
-
     }
 
 
@@ -98,17 +103,11 @@ void FieldsReader::read() {
 }
 
 
-void FieldsReader::writeFile(int timeStep) {
-    int nprocs = eckit::mpi::comm().size();
-    int procID = eckit::mpi::comm().rank();
+void FieldsReader::writeFile(std::string filename) {
 
     // Write only if it owns values
     if (ownsValues()) {
 
-        std::stringstream ss;
-        ss << "extracted-areas-step" << timeStep << "-proc" << procID <<  ".csv";
-        std::string filename{ss.str()};
-            
         std::ofstream outfile;
 
         try {

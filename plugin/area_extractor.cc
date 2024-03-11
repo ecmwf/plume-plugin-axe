@@ -15,6 +15,7 @@
 
 #include "eckit/log/Log.h"
 #include "eckit/exception/Exceptions.h"
+#include "eckit/mpi/Comm.h"
 
 #include "atlas/array.h"
 #include "atlas/meshgenerator.h"
@@ -97,8 +98,16 @@ void PluginCoreAreaExtractor::setup() {
 
 void PluginCoreAreaExtractor::run() {
     int timeStep = modelData().getInt("NSTEP");
+
+    int nprocs = eckit::mpi::comm().size();
+    int procID = eckit::mpi::comm().rank();
+
+    std::stringstream ss;
+    ss << "extracted-areas-step" << timeStep << "-proc" << procID <<  ".csv";
+    std::string filename{ss.str()};
+            
     reader_->read();
-    reader_->writeFile(timeStep);
+    reader_->writeFile(filename);
 };
 
 
