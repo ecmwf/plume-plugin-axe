@@ -16,6 +16,13 @@ ecbuild_add_library(
     SOURCES
         area_extractor.h
         area_extractor.cc
+        area.h
+        area.cc
+        field_reader.h
+        field_reader.cc
+        user_request.h
+        user_request.cc
+        plugin_types.h
     
     DEFINITIONS
         ${PLUGINS_DEFINITIONS}        
