@@ -36,9 +36,12 @@ class DataAggregator:
 
         # find all users
         users_uniq_df = values_df[["user"]].value_counts(ascending=True).reset_index(name='count')
+        print(users_uniq_df["user"])
 
         # Assemble one covjson file for each user (that includes all the requested areas)
         for user_name in users_uniq_df["user"]:
+
+            print(f"Processing user: {user_name}")
             
             # filter user data
             user_df = values_df[values_df["user"] == user_name]
@@ -71,10 +74,14 @@ class DataAggregator:
         Read area extraction CSV files
         """
 
-        values_df = []
+        values_df_list = []
         for file in files:
             print(f"Reading file: {file}")
-            values_df = pd.read_csv( os.path.join(self.run_dir, file))
+            df = pd.read_csv( os.path.join(self.run_dir, file))
+            values_df_list.append(df)
+
+        values_df = pd.concat(values_df_list, axis=0, ignore_index=True)
+        
         return values_df
 
 
