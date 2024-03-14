@@ -114,18 +114,18 @@ void FieldsReader::writeFile(std::string filename) {
             outfile.open(filename);
 
             // header 
-            outfile << "user, area_idx, point_idx, lat, lon, lev, param, value" << std::endl;
+            outfile << "user,area_idx,point_idx,lat,lon,lev,param,value" << std::endl;
 
             // values
             for (int iVal=0; iVal<numProcValues_; iVal++) {
-                outfile << users_[iVal] << ", ";
-                outfile << area_idxs_[iVal] << ", ";
-                outfile << point_idxs_[iVal] << ", ";
-                outfile << lats_[iVal] << ", ";
-                outfile << lons_[iVal] << ", ";
-                outfile << levs_[iVal] << ", ";
-                outfile << params_[iVal] << ", ";
-                outfile << values_[iVal] << ", ";
+                outfile << users_[iVal] << ",";
+                outfile << area_idxs_[iVal] << ",";
+                outfile << point_idxs_[iVal] << ",";
+                outfile << lats_[iVal] << ",";
+                outfile << lons_[iVal] << ",";
+                outfile << levs_[iVal] << ",";
+                outfile << params_[iVal] << ",";
+                outfile << values_[iVal];
                 outfile << std::endl;
             }
 
