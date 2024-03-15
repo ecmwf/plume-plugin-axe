@@ -49,6 +49,9 @@ private:
     // field reader
     FieldsReader* reader_;
 
+    // extracted data
+    ExtractedData* data_;
+
 };
 // ==========================================================================================
 

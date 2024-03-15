@@ -13,3 +13,8 @@ ecbuild_configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/plume-config.json.in
     ${CMAKE_CURRENT_SOURCE_DIR}/plume-config.json @ONLY
 )
+
+ecbuild_configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/plume-config-t21.json.in
+    ${CMAKE_CURRENT_SOURCE_DIR}/plume-config-t21.json @ONLY
+)

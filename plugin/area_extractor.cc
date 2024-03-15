@@ -25,6 +25,7 @@
 #include "atlas/output/Gmsh.h"
 
 #include "area_extractor.h"
+#include "data_writer.h"
 
 
 namespace area_extractor {
@@ -71,10 +72,16 @@ PluginCoreAreaExtractor::PluginCoreAreaExtractor(const eckit::Configuration& con
 }
 
 PluginCoreAreaExtractor::~PluginCoreAreaExtractor() {
+
     if (reader_) {
         delete reader_;
         reader_ = nullptr;
     }
+
+    if (data_) {
+        delete data_;
+        data_ = nullptr;
+    }    
 }
 
 void PluginCoreAreaExtractor::setup() {
@@ -91,8 +98,11 @@ void PluginCoreAreaExtractor::setup() {
         fields.push_back(modelData().getAtlasFieldShared(name));
     }
 
-    // create the reader
-    reader_ = new FieldsReader{requests_, fields};
+    // Create the reader
+    reader_ = new FieldsReader{fields};
+
+    // Extract data
+    data_ = reader_->extractData(requests_);
 }
 
 
@@ -106,8 +116,12 @@ void PluginCoreAreaExtractor::run() {
     ss << "extracted-areas-step" << timeStep << "-proc" << procID <<  ".csv";
     std::string filename{ss.str()};
             
-    reader_->read();
-    reader_->writeFile(filename);
+    reader_->updateData(*data_);
+
+    // write data our
+    DataWriterCSV writer;
+    writer.write(filename, *data_);
+
 };
 
 

@@ -1,41 +1,42 @@
 #include <map>
 #include <iostream>
-#include <fstream>
-#include <sstream>
-
-#include "eckit/exception/Exceptions.h"
 
 #include "atlas/array.h"
 #include "atlas/functionspace/NodeColumns.h"
 
+
+#include "plugin_types.h"
 #include "field_reader.h"
 
 
 namespace area_extractor {
 
-FieldsReader::FieldsReader(std::vector<UserRequest> requests, std::vector<atlas::Field> fields) : 
-    fields_{fields},
-    numProcValues_{0} {
+FieldsReader::FieldsReader(std::vector<atlas::Field> fields) : 
+    fields_{fields} {
 
-    lonlats_ = fields_[0].functionspace().lonlat();
-    ghost_ = fields_[0].functionspace().ghost();
-
-    // here we go through the requests and find points to extract..
-    setupStorage(requests);
-
-}
-FieldsReader::~FieldsReader() {
-
+    for (const auto& field : fields_){
+        fieldViewMap_.insert({field.name(), field});
+    }
 }
 
-void FieldsReader::setupStorage(const std::vector<UserRequest>& requests) {
+
+FieldsReader::~FieldsReader() {}
+
+
+ExtractedData* FieldsReader::extractData(const std::vector<UserRequest>& requests) {
+
+    // create_data
+    ExtractedData* data = new ExtractedData;
 
     std::vector<atlas::array::ArrayView<const FIELD_TYPE_REAL,2>> fieldViewVector;
     for (const auto& field : fields_){
         fieldViewVector.push_back(atlas::array::make_view<const FIELD_TYPE_REAL,2>(field));
     }
-    
+
+    lonlats_ = fields_[0].functionspace().lonlat();    
     auto lonLatArray = atlas::array::make_view<const double,2>( lonlats_ );
+
+    ghost_ = fields_[0].functionspace().ghost();
     auto ghostArray = atlas::array::make_view<int,1>( ghost_ );
 
     double pointLat;
@@ -54,18 +55,13 @@ void FieldsReader::setupStorage(const std::vector<UserRequest>& requests) {
                 for (const auto& area : request.areas()) {
 
                     if (area.isPointInside(pointLat, pointLon)) {
+
                         for (int iField=0; iField<fields_.size(); iField++){
                             for (int iLev=0; iLev<nlevs; iLev++){
-                                users_.push_back(request.user());
-                                area_idxs_.push_back(area.id());
-                                point_idxs_.push_back(iPt);
-                                lats_.push_back(pointLat);
-                                lons_.push_back(pointLon);
-                                levs_.push_back(iLev);
-                                params_.push_back(fields_[iField].name());
-                                values_.push_back(fieldViewVector[iField](iPt,iLev));
+                                data->addPoint(request.user(), area.id(), iPt, pointLat, pointLon, iLev, fields_[iField].name(), fieldViewVector[iField](iPt,iLev));
                             }
                         }
+
                     }
                     
                 }
@@ -73,72 +69,24 @@ void FieldsReader::setupStorage(const std::vector<UserRequest>& requests) {
         }
     }
 
-
-    // update n values
-    numProcValues_ = values_.size();
-
+    return data;
 }
 
 // Read the fields and update the values
-void FieldsReader::read() {
+void FieldsReader::updateData(ExtractedData& data) {
 
-    // Convenience map fieldName->fieldView
-    std::map<std::string, atlas::Field> fieldViewMap;
-    for (const auto& field : fields_){
-        fieldViewMap.insert({field.name(), field});
-    }
+    for (int iPt=0; iPt<data.size(); iPt++) {
 
-    for (int iVal=0; iVal<numProcValues_; iVal++) {
+        std::string paramName = data.get_param(iPt);
 
-        std::string paramName = params_[iVal];
-        atlas::Field field = fieldViewMap[paramName];
+        int ptIDX = data.get_idx(iPt);
+        int iLev = data.get_lev(iPt);
+
+        atlas::Field field = fieldViewMap_[paramName];
         auto arr = atlas::array::make_view<const FIELD_TYPE_REAL,2>(field);
 
-        int ptIDX = point_idxs_[iVal];
-        int iLev = levs_[iVal];
-
-        values_[iVal] = arr(ptIDX, iLev);
+        data.set_value(iPt, arr(ptIDX, iLev));
     }
-
-}
-
-
-void FieldsReader::writeFile(std::string filename) {
-
-    // Write only if it owns values
-    if (ownsValues()) {
-
-        std::ofstream outfile;
-
-        try {
-            outfile.open(filename);
-
-            // header 
-            outfile << "user,area_idx,point_idx,lat,lon,lev,param,value" << std::endl;
-
-            // values
-            for (int iVal=0; iVal<numProcValues_; iVal++) {
-                outfile << users_[iVal] << ",";
-                outfile << area_idxs_[iVal] << ",";
-                outfile << point_idxs_[iVal] << ",";
-                outfile << lats_[iVal] << ",";
-                outfile << lons_[iVal] << ",";
-                outfile << levs_[iVal] << ",";
-                outfile << params_[iVal] << ",";
-                outfile << values_[iVal];
-                outfile << std::endl;
-            }
-
-            outfile.close();
-        } catch (std::exception& e) {
-            eckit::Log::warning() << "Error while writing file: " << filename << " -- " << e.what() << std::endl;
-        }
-    }
-}
-
-
-bool FieldsReader::ownsValues() {
-    return numProcValues_;
 }
 
 } // namespace area_extractor

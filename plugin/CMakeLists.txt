@@ -23,6 +23,10 @@ ecbuild_add_library(
         user_request.h
         user_request.cc
         plugin_types.h
+        extracted_data.h
+        extracted_data.cc
+        data_writer.h
+        data_writer.cc
     
     DEFINITIONS
         ${PLUGINS_DEFINITIONS}        
