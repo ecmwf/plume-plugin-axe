@@ -14,12 +14,14 @@ ecbuild_add_library(
     TARGET plugin_area_extractor
 
     SOURCES
+        plugin_utils.h
+        plugin_utils.cc
         area_extractor.h
         area_extractor.cc
         area.h
         area.cc
-        field_reader.h
-        field_reader.cc
+        data_reader.h
+        data_reader.cc
         user_request.h
         user_request.cc
         plugin_types.h

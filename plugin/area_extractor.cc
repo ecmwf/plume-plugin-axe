@@ -25,7 +25,7 @@
 #include "atlas/output/Gmsh.h"
 
 #include "area_extractor.h"
-#include "data_writer.h"
+#include "extracted_data.h"
 
 
 namespace area_extractor {
@@ -45,7 +45,12 @@ const PluginAreaExtractor& PluginAreaExtractor::instance() {
 // PluginCoreAreaExtractor
 static plume::PluginCoreBuilder<PluginCoreAreaExtractor> pluginCorelBuilderAreaProbe;
 
-PluginCoreAreaExtractor::PluginCoreAreaExtractor(const eckit::Configuration& conf) : PluginCore(conf) {
+
+PluginCoreAreaExtractor::PluginCoreAreaExtractor(const eckit::Configuration& conf) : 
+    PluginCore(conf), reader_{nullptr}, writer_{nullptr} {
+
+    // output strategy
+    outputStrategy_ = conf.getString("output_strategy");
 
     // extract user requests from the configuration file
     std::vector<eckit::LocalConfiguration> requests = conf.getSubConfigurations("requests");
@@ -81,7 +86,12 @@ PluginCoreAreaExtractor::~PluginCoreAreaExtractor() {
     if (data_) {
         delete data_;
         data_ = nullptr;
-    }    
+    }
+
+    if (writer_) {
+        delete writer_;
+        writer_ = nullptr;
+    }        
 }
 
 void PluginCoreAreaExtractor::setup() {
@@ -99,28 +109,33 @@ void PluginCoreAreaExtractor::setup() {
     }
 
     // Create the reader
-    reader_ = new FieldsReader{fields};
+    reader_ = new DataReader{fields};
 
     // Extract data
     data_ = reader_->extractData(requests_);
+
+    // Construct the data writer
+    // writer_ = new DataWriterCSV{*data_};
+    writer_ = new DataWriterCOVJSON{*data_};
 }
 
 
 void PluginCoreAreaExtractor::run() {
-    int timeStep = modelData().getInt("NSTEP");
 
-    int nprocs = eckit::mpi::comm().size();
+    int timeStep = modelData().getInt("NSTEP");
     int procID = eckit::mpi::comm().rank();
 
     std::stringstream ss;
     ss << "extracted-areas-step" << timeStep << "-proc" << procID <<  ".csv";
     std::string filename{ss.str()};
             
+    // Update data
     reader_->updateData(*data_);
 
-    // write data our
-    DataWriterCSV writer;
-    writer.write(filename, *data_);
+    // Write data
+    writer_->writeData(filename);
+
+    ExtractedData global_data = data_->gather(0);
 
 };
 

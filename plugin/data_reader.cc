@@ -6,12 +6,12 @@
 
 
 #include "plugin_types.h"
-#include "field_reader.h"
+#include "data_reader.h"
 
 
 namespace area_extractor {
 
-FieldsReader::FieldsReader(std::vector<atlas::Field> fields) : 
+DataReader::DataReader(std::vector<atlas::Field> fields) : 
     fields_{fields} {
 
     for (const auto& field : fields_){
@@ -20,10 +20,10 @@ FieldsReader::FieldsReader(std::vector<atlas::Field> fields) :
 }
 
 
-FieldsReader::~FieldsReader() {}
+DataReader::~DataReader() {}
 
 
-ExtractedData* FieldsReader::extractData(const std::vector<UserRequest>& requests) {
+ExtractedData* DataReader::extractData(const std::vector<UserRequest>& requests) {
 
     // create_data
     ExtractedData* data = new ExtractedData;
@@ -73,7 +73,7 @@ ExtractedData* FieldsReader::extractData(const std::vector<UserRequest>& request
 }
 
 // Read the fields and update the values
-void FieldsReader::updateData(ExtractedData& data) {
+void DataReader::updateData(ExtractedData& data) {
 
     for (int iPt=0; iPt<data.size(); iPt++) {
 

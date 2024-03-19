@@ -19,8 +19,9 @@
 #include "plume/Plugin.h"
 
 #include "plugin_types.h"
-#include "field_reader.h"
+#include "data_reader.h"
 #include "user_request.h"
+#include "data_writer.h"
 
 
 namespace area_extractor {
@@ -43,14 +44,20 @@ public:
 
 private:
 
+    // output strategy
+    std::string outputStrategy_; // [ process_csv | covjson ]
+
     // user requests
     std::vector<UserRequest> requests_;
 
     // field reader
-    FieldsReader* reader_;
+    DataReader* reader_;
 
     // extracted data
     ExtractedData* data_;
+
+    // data writer
+    DataWriter* writer_;
 
 };
 // ==========================================================================================

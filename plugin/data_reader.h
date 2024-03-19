@@ -15,14 +15,14 @@ namespace area_extractor {
  * @brief Class that extracts values according to requests
  * 
  */
-class FieldsReader {
+class DataReader {
 
     using FieldMap = std::map<std::string, atlas::Field>;
 
 public:
 
-    FieldsReader(std::vector<atlas::Field> fields);
-    ~FieldsReader();
+    DataReader(std::vector<atlas::Field> fields);
+    ~DataReader();
 
     // Extract data from requests
     ExtractedData* extractData(const std::vector<UserRequest>& requests);
