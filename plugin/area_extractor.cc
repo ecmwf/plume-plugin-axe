@@ -47,34 +47,11 @@ static plume::PluginCoreBuilder<PluginCoreAreaExtractor> pluginCorelBuilderAreaP
 
 
 PluginCoreAreaExtractor::PluginCoreAreaExtractor(const eckit::Configuration& conf) : 
-    PluginCore(conf), reader_{nullptr}, writer_{nullptr} {
+    PluginCore(conf), 
+    config_{conf, PluginAreaExtractor::requestedFields()}, 
+    reader_{nullptr}, 
+    writer_{nullptr}{}
 
-    // output strategy
-    outputStrategy_ = conf.getString("output_strategy");
-
-    // extract user requests from the configuration file
-    std::vector<eckit::LocalConfiguration> requests = conf.getSubConfigurations("requests");
-    
-    for (const auto& conf_req : requests) {
-
-        std::string user = conf_req.getString("user");
-        std::string s3_url = conf_req.getString("s3_url");
-        std::vector<eckit::LocalConfiguration> areas = conf_req.getSubConfigurations("extraction_areas");
-
-        UserRequest req(user, s3_url);
-
-        for (const auto& area : areas) {
-            double north = area.getDouble("north");
-            double south = area.getDouble("south");
-            double east = area.getDouble("east");
-            double west = area.getDouble("west");
-            req.add_area(north ,south ,east ,west);
-        }
-
-        requests_.push_back(req);
-    }
-
-}
 
 PluginCoreAreaExtractor::~PluginCoreAreaExtractor() {
 
@@ -97,8 +74,8 @@ PluginCoreAreaExtractor::~PluginCoreAreaExtractor() {
 void PluginCoreAreaExtractor::setup() {
 
     // print requests
-    for (const auto& req: requests_) {
-        std::cout << req << std::endl;
+    if (eckit::mpi::comm().rank() == 0) {
+        std::cout << config_ << std::endl;
     }
 
     // prepare the field reader
@@ -112,11 +89,11 @@ void PluginCoreAreaExtractor::setup() {
     reader_ = new DataReader{fields};
 
     // Extract data
-    data_ = reader_->extractData(requests_);
+    data_ = reader_->extractData(config_);
 
     // Construct the data writer
-    // writer_ = new DataWriterCSV{*data_};
-    writer_ = new DataWriterCOVJSON{*data_};
+    writer_ = new DataWriterCSV{*data_};
+    // writer_ = new DataWriterCOVJSON{*data_};
 }
 
 
@@ -136,6 +113,9 @@ void PluginCoreAreaExtractor::run() {
     writer_->writeData(filename);
 
     ExtractedData global_data = data_->gather(0);
+
+    // // filter data according to username
+    // data_->filter(ExtractedData::Filter::USER, "user-1");
 
 };
 

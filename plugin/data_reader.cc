@@ -23,10 +23,10 @@ DataReader::DataReader(std::vector<atlas::Field> fields) :
 DataReader::~DataReader() {}
 
 
-ExtractedData* DataReader::extractData(const std::vector<UserRequest>& requests) {
+ExtractedData* DataReader::extractData(const PluginConfig& config) {
 
     // create_data
-    ExtractedData* data = new ExtractedData;
+    ExtractedData* data = new ExtractedData{config};
 
     std::vector<atlas::array::ArrayView<const FIELD_TYPE_REAL,2>> fieldViewVector;
     for (const auto& field : fields_){
@@ -51,19 +51,19 @@ ExtractedData* DataReader::extractData(const std::vector<UserRequest>& requests)
             pointLon = lonLatArray(iPt, 0);
             pointLat = lonLatArray(iPt, 1);
 
-            for (const auto& request: requests) {
+            for (const auto& request: config.requests()) {
                 for (const auto& area : request.areas()) {
 
                     if (area.isPointInside(pointLat, pointLon)) {
 
                         for (int iField=0; iField<fields_.size(); iField++){
                             for (int iLev=0; iLev<nlevs; iLev++){
-                                data->addPoint(request.user(), area.id(), iPt, pointLat, pointLon, iLev, fields_[iField].name(), fieldViewVector[iField](iPt,iLev));
+                                int user_uid = config.user_uid(request.user());
+                                int param_uid = config.param_uid(fields_[iField].name());
+                                data->addPoint(user_uid, area.id(), iPt, pointLat, pointLon, iLev, param_uid, fieldViewVector[iField](iPt,iLev));
                             }
                         }
-
-                    }
-                    
+                    }   
                 }
             }
         }

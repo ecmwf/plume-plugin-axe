@@ -20,26 +20,11 @@ public:
 
     ~ExtractionArea();
 
-    int id() const { 
-        return area_id_;
-    }
-    
-    double north() const { 
-        return north_;
-    }
-
-    double south() const { 
-        return south_;
-    }
-
-    double east() const { 
-        return east_;
-    }
-
-    double west() const { 
-        return west_;
-    }
-
+    int id() const { return area_id_; }
+    double north() const { return north_; }
+    double south() const { return south_; }
+    double east() const { return east_; }
+    double west() const { return west_; }
 
     bool isPointInside(double lat, double lon) const {
         return ((lat <= north_) && (lat >= south_) && (lon <= east_) && (lon >= west_));

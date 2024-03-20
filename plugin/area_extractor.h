@@ -18,6 +18,7 @@
 #include "plume/PluginCore.h"
 #include "plume/Plugin.h"
 
+#include "plugin_config.h"
 #include "plugin_types.h"
 #include "data_reader.h"
 #include "user_request.h"
@@ -44,11 +45,13 @@ public:
 
 private:
 
-    // output strategy
-    std::string outputStrategy_; // [ process_csv | covjson ]
+    // // output strategy
+    // std::string outputStrategy_; // [ process_csv | covjson ]
 
-    // user requests
-    std::vector<UserRequest> requests_;
+    // // user requests
+    // std::vector<UserRequest> requests_;
+
+    PluginConfig config_;
 
     // field reader
     DataReader* reader_;

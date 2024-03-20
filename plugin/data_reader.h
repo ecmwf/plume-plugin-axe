@@ -5,7 +5,7 @@
 
 #include "atlas/field/Field.h"
 
-#include "user_request.h"
+#include "plugin_config.h"
 #include "extracted_data.h"
 
 
@@ -24,8 +24,8 @@ public:
     DataReader(std::vector<atlas::Field> fields);
     ~DataReader();
 
-    // Extract data from requests
-    ExtractedData* extractData(const std::vector<UserRequest>& requests);
+    // Extract data from configured requests
+    ExtractedData* extractData(const PluginConfig& config);
 
     // update data
     void updateData(ExtractedData& data);
