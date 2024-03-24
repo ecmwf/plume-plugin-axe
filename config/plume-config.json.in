@@ -4,6 +4,7 @@
             "name": "PluginAreaExtractor",
             "lib": "plugin_area_extractor",
             "core-config": {
+                "output_strategy": "covjson",
                 "requests": [
                     {
                         "user": "user-1",

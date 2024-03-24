@@ -183,7 +183,7 @@ std::vector<int> ExtractedData::find(FilterKey key) const {
     }
 
     // filter out areas != key.areaIdx
-    if (key.areaIdx > 0) {
+    if (key.areaIdx >= 0) {
         fidxs.erase(std::remove_if(fidxs.begin(), fidxs.end(), 
                                   [this, key](const int& idx){ return area_idxs_[idx] != key.areaIdx; }),
                     fidxs.end() );

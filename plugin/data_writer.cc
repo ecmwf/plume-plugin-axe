@@ -86,19 +86,20 @@ void DataWriterCOVJSON::writeData(const std::string& filename, const ExtractedDa
             std::vector<int> userAreaIdxs(areas.size());
             std::transform(areas.begin(), areas.end(), userAreaIdxs.begin(), [](const ExtractionArea& elem){return elem.id();});
 
+            std::vector<int> user_idxs = data.find({.user=user});
+            ExtractedData userData = data.slice(user_idxs);
+            
+            std::string covjson = assembleCOVJSON(user, userAreaIdxs, userData, indent);
+
+
+            std::stringstream ss;
+            ss << filename << "-" << user << ".json";
+            std::string filename_covjson{ss.str()};
+
             try {
-
-                std::stringstream ss;
-                ss << filename << "-" << user << ".json";
-                std::string filename_covjson{ss.str()};
-
                 std::ofstream outfile;
                 outfile.open(filename_covjson);
-
-                std::vector<int> user_idxs = data.find({.user=user});
-                ExtractedData userData = data.slice(user_idxs);
-                
-                outfile << assembleCOVJSON(user, userAreaIdxs, userData, indent) << std::endl;
+                outfile << covjson << std::endl;
                 outfile.close();
             } catch (std::exception& e) {
                 eckit::Log::warning() << "Error while writing file: " << filename << " -- " << e.what() << std::endl;
@@ -130,7 +131,7 @@ std::string DataWriterCOVJSON::assembleCOVJSON(const std::string& user, const st
 std::string DataWriterCOVJSON::assembleCoverages(const std::string& user, const std::vector<int>& areas, const ExtractedData& data, int& indent) const {
 
     // find areas in the data
-    std::string coverages;
+    std::stringstream coverages_ss;
 
     // prepare domain
     std::string tvalue = "\"2017-01-01T00:00:00\""; /// TODO: this needs to be changed...
@@ -164,7 +165,7 @@ std::string DataWriterCOVJSON::assembleCoverages(const std::string& user, const 
         std::string domain = TemplatesCOVJSON::domain_templ(tvalue, latlon_str, indent);
 
         // ranges (loop over params)
-        std::string ranges;
+        std::stringstream ranges_ss;
         std::stringstream shape_ss;
         shape_ss << areaData.size();
         std::string shape{shape_ss.str()};
@@ -178,28 +179,26 @@ std::string DataWriterCOVJSON::assembleCoverages(const std::string& user, const 
             std::stringstream values_ss;
             for (size_t ival=0; ival<areaData.get_param_values(iparam).size(); ival++) {
                 if (!ival) values_ss << "\n";
-
                 values_ss << ind_values << std::fixed << std::setprecision(3) << areaData.get_param_values(iparam)[ival];
-
                 if (ival != areaData.size()-1) values_ss << "," << std::endl;
             }
 
             std::string values{values_ss.str()};
             std::string range = TemplatesCOVJSON::range_templ(paramName, shape, axisNames, values, indent);
 
-            ranges = ranges + range;
-            if (iparam != param_size-1) ranges = ranges = ranges + ",\n";
+            ranges_ss << range;
+            if (iparam != param_size-1) ranges_ss << ",\n";
         }
 
         // assemble coverage
-        std::string coverage = TemplatesCOVJSON::coverage_templ(metadata, domain, ranges, indent);
+        std::string coverage = TemplatesCOVJSON::coverage_templ(metadata, domain, ranges_ss.str(), indent);
 
-        coverages = coverages + coverage;
-        if (iarea != areas.size()-1) coverages = coverages + ",\n";
+        coverages_ss << coverage;
+        if (iarea != areas.size()-1) coverages_ss << ",\n";
         
     }
 
-    return coverages;
+    return coverages_ss.str();
     
 }
 // ==============================================================================================
