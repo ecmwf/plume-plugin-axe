@@ -18,7 +18,6 @@ int append_string(std::vector<char>& arr, const std::string& str, int buff_len);
 // simply pring a vector (for debugging)
 template<typename T>
 void printvec(const std::string& name, std::vector<T> vec) {
-    std::cout << "--> " << name << ": " << std::endl;
     for (const auto& elem : vec) {
         std::cout << elem << std::endl;
     }

@@ -52,17 +52,32 @@ ExtractedData* DataReader::extractData(const PluginConfig& config) {
             pointLat = lonLatArray(iPt, 1);
 
             for (const auto& request: config.requests()) {
+
+                int user_uid = config.user_uid(request.user());
                 for (const auto& area : request.areas()) {
 
+                    int area_id = area.id();
                     if (area.isPointInside(pointLat, pointLon)) {
 
-                        for (int iField=0; iField<fields_.size(); iField++){
-                            for (int iLev=0; iLev<nlevs; iLev++){
-                                int user_uid = config.user_uid(request.user());
-                                int param_uid = config.param_uid(fields_[iField].name());
-                                data->addPoint(user_uid, area.id(), iPt, pointLat, pointLon, iLev, param_uid, fieldViewVector[iField](iPt,iLev));
+                        // for (int iField=0; iField<fields_.size(); iField++){
+                        //     for (int iLev=0; iLev<nlevs; iLev++){
+                        //         int user_uid = config.user_uid(request.user());
+                        //         int param_uid = config.param_uid(fields_[iField].name());
+                        //         data->addPoint(user_uid, area.id(), iPt, pointLat, pointLon, iLev, param_uid, fieldViewVector[iField](iPt,iLev));
+                        //     }
+                        // }
+
+                        // extract values at each vert level
+                        for (int iLev=0; iLev<nlevs; iLev++){
+
+                            std::vector<FIELD_TYPE_REAL> pointValues(fields_.size());
+                            for (int iField=0; iField<fields_.size(); iField++){
+                                pointValues[iField] = fieldViewVector[iField](iPt,iLev);
                             }
+
+                            data->addPoint(user_uid, area_id, iPt, pointLat, pointLon, iLev, pointValues);
                         }
+
                     }   
                 }
             }
@@ -75,17 +90,23 @@ ExtractedData* DataReader::extractData(const PluginConfig& config) {
 // Read the fields and update the values
 void DataReader::updateData(ExtractedData& data) {
 
-    for (int iPt=0; iPt<data.size(); iPt++) {
+    std::vector<FIELD_TYPE_REAL> values(fields_.size());
+    for (size_t iPt=0; iPt<data.size(); iPt++) {
 
-        std::string paramName = data.get_param(iPt);
+        // std::string paramName = data.get_param(iPt);
 
         int ptIDX = data.get_idx(iPt);
         int iLev = data.get_lev(iPt);
 
-        atlas::Field field = fieldViewMap_[paramName];
-        auto arr = atlas::array::make_view<const FIELD_TYPE_REAL,2>(field);
+        for (size_t iparam=0; iparam<fields_.size(); iparam++){
+            // atlas::Field field = fieldViewMap_[paramName];
+            atlas::Field field = fields_[iparam];
+            auto arr = atlas::array::make_view<const FIELD_TYPE_REAL,2>(field);
 
-        data.set_value(iPt, arr(ptIDX, iLev));
+            values[iparam] = arr(ptIDX, iLev); 
+        }
+
+        data.set_value(iPt, values);
     }
 }
 

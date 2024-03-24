@@ -25,6 +25,9 @@ public:
 
     const std::vector<UserRequest>& requests() const;
 
+    const std::vector<std::string>& users() const {return users_;}
+    const std::vector<std::string>& parameters() const {return params_;}
+
     friend std::ostream& operator<<(std::ostream& ss, const PluginConfig& obj);
 
     std::string userName(int uid) const;
@@ -44,6 +47,9 @@ private:
 
     // parameters
     std::vector<std::string> params_;
+
+    // users
+    std::vector<std::string> users_;
 
     // output strategy
     std::string outputStrategy_; // [ process_csv | covjson ]

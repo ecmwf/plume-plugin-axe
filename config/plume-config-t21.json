@@ -7,7 +7,7 @@
                 "output_strategy": "covjson",
                 "requests": [
                     {
-                        "user": "user-11",
+                        "user": "user11",
                         "extraction_areas": [
                             {"north": 50, "south": 4, "east": 75, "west": 14},
                             {"north": 60, "south": 5, "east": 76, "west": 15},
@@ -16,7 +16,7 @@
                         "s3_url": "s3_url_1"
                     },
                     {
-                        "user": "user-22",
+                        "user": "user22",
                         "extraction_areas": [
                             {"north": 65, "south": 14, "east": 88, "west": 7},
                             {"north": 66, "south": 15, "east": 89, "west": 8},
@@ -25,7 +25,7 @@
                         "s3_url": "s3_url_2"
                     },
                     {
-                        "user": "user-22",
+                        "user": "user22",
                         "extraction_areas": [
                             {"north": 65, "south": 14, "east": 88, "west": 7},
                             {"north": 66, "south": 15, "east": 89, "west": 8},
@@ -34,7 +34,7 @@
                         "s3_url": "s3_url_2"
                     },
                     {
-                        "user": "user-11",
+                        "user": "user11",
                         "extraction_areas": [
                             {"north": 65, "south": 14, "east": 88, "west": 7},
                             {"north": 66, "south": 15, "east": 89, "west": 8},
@@ -43,7 +43,7 @@
                         "s3_url": "s3_url_2"
                     },                
                     {
-                        "user": "user-33",
+                        "user": "user33",
                         "extraction_areas": [
                             {"north": -10, "south": -21, "east": 88, "west": 8},
                             {"north": -11, "south": -22, "east": 98, "west": 9},

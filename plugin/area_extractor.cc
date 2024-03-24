@@ -48,28 +48,12 @@ static plume::PluginCoreBuilder<PluginCoreAreaExtractor> pluginCorelBuilderAreaP
 
 PluginCoreAreaExtractor::PluginCoreAreaExtractor(const eckit::Configuration& conf) : 
     PluginCore(conf), 
-    config_{conf, PluginAreaExtractor::requestedFields()}, 
-    reader_{nullptr}, 
-    writer_{nullptr}{}
+    config_{conf, PluginAreaExtractor::requestedFields()} {
 
-
-PluginCoreAreaExtractor::~PluginCoreAreaExtractor() {
-
-    if (reader_) {
-        delete reader_;
-        reader_ = nullptr;
-    }
-
-    if (data_) {
-        delete data_;
-        data_ = nullptr;
-    }
-
-    if (writer_) {
-        delete writer_;
-        writer_ = nullptr;
-    }        
 }
+
+
+PluginCoreAreaExtractor::~PluginCoreAreaExtractor() {}
 
 void PluginCoreAreaExtractor::setup() {
 
@@ -86,14 +70,14 @@ void PluginCoreAreaExtractor::setup() {
     }
 
     // Create the reader
-    reader_ = new DataReader{fields};
+    reader_.reset( new DataReader{fields} );
 
     // Extract data
-    data_ = reader_->extractData(config_);
+    data_.reset( reader_->extractData(config_) );
 
     // Construct the data writer
-    writer_ = new DataWriterCSV{*data_};
-    // writer_ = new DataWriterCOVJSON{*data_};
+    // writer_.reset( new DataWriterCSV{} );
+    writer_.reset( new DataWriterCOVJSON{} );
 }
 
 
@@ -103,19 +87,19 @@ void PluginCoreAreaExtractor::run() {
     int procID = eckit::mpi::comm().rank();
 
     std::stringstream ss;
-    ss << "extracted-areas-step" << timeStep << "-proc" << procID <<  ".csv";
+    ss << "extracted-areas-step" << timeStep << "-proc" << procID;
     std::string filename{ss.str()};
             
     // Update data
     reader_->updateData(*data_);
 
     // Write data
-    writer_->writeData(filename);
+    globaldata_.reset(data_->gather(0));
+    writer_->writeData(filename, *globaldata_);
 
-    ExtractedData global_data = data_->gather(0);
+    // // Write data
+    // writer_->writeData(filename, *data_);
 
-    // // filter data according to username
-    // data_->filter(ExtractedData::Filter::USER, "user-1");
 
 };
 

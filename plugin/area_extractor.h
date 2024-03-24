@@ -14,6 +14,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <memory>
 
 #include "plume/PluginCore.h"
 #include "plume/Plugin.h"
@@ -45,23 +46,20 @@ public:
 
 private:
 
-    // // output strategy
-    // std::string outputStrategy_; // [ process_csv | covjson ]
-
-    // // user requests
-    // std::vector<UserRequest> requests_;
-
+    // plugin configuration
     PluginConfig config_;
 
     // field reader
-    DataReader* reader_;
+    std::unique_ptr<DataReader> reader_;
 
     // extracted data
-    ExtractedData* data_;
+    std::unique_ptr<ExtractedData> data_;
 
     // data writer
-    DataWriter* writer_;
+    std::unique_ptr<DataWriter> writer_;
 
+    // aggregated data
+    std::unique_ptr<ExtractedData> globaldata_;
 };
 // ==========================================================================================
 

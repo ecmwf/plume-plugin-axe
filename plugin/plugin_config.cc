@@ -61,6 +61,11 @@ PluginConfig::PluginConfig(const eckit::Configuration& conf, const std::vector<s
         uid_to_user_.insert(std::make_pair(p.second,p.first));
     }
 
+    // store users
+    for (const auto& ui : user_to_uid_) {
+        users_.push_back( ui.first );
+    }
+
 }
 
 PluginConfig::~PluginConfig() {
@@ -106,8 +111,6 @@ int PluginConfig::param_uid(const std::string& paramName) const {
 
 
 std::ostream& operator<<(std::ostream& ss, const PluginConfig& obj) {
-
-    std::cout << "obj.params_.size(): " << obj.params_.size() << std::endl;
     ss << "{";
     ss << "outputStrategy:" << obj.outputStrategy_ << "," << std::endl;
     ss << "requests: [" << std::endl;
