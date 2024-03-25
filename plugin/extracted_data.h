@@ -46,6 +46,8 @@ public:
 
     std::string get_param(int pIdx) const { return config_.parameters()[pIdx]; }
 
+    static FilterKey defaultFilterKey() { return {}; }
+
 
     // all values for a certain point
     std::vector<FIELD_TYPE_REAL> get_values(int pIdx) const {
@@ -86,7 +88,7 @@ public:
     // Plugin configuration
     const PluginConfig& config() const {return config_;}
 
-    std::vector<int> find(FilterKey key = FilterKey{}) const ;
+    std::vector<int> find(FilterKey key = defaultFilterKey()) const ;
 
 private:
 
