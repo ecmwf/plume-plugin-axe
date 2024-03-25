@@ -15,17 +15,26 @@ ecbuild_add_library(
 
     SOURCES
         area.h
-        area.cc
+        area.cc        
         plugin_utils.h
         plugin_utils.cc
         plugin_config.h
         plugin_config.cc
         area_extractor.h
         area_extractor.cc
+
         data_reader.h
         data_reader.cc
+
         data_writer.h
         data_writer.cc
+        data_writer_csv.h
+        data_writer_csv.cc
+        data_writer_json.h
+        data_writer_json.cc
+        data_writer_nc.h
+        data_writer_nc.cc
+        
         user_request.h
         user_request.cc
         plugin_types.h

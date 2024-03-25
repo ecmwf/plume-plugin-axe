@@ -44,7 +44,7 @@ void ExtractedData::addPoint(int user,
 
 
 // collect data in a rank
-ExtractedData* ExtractedData::gather(int collectRank) {
+ExtractedData* ExtractedData::gather(int collectRank) const {
 
     int data_size_ = size();
     int data_size_global_;

@@ -43,7 +43,7 @@ const PluginAreaExtractor& PluginAreaExtractor::instance() {
 }
 
 // PluginCoreAreaExtractor
-static plume::PluginCoreBuilder<PluginCoreAreaExtractor> pluginCorelBuilderAreaProbe;
+static plume::PluginCoreBuilder<PluginCoreAreaExtractor> pluginCorelBuilderAreaExtractor;
 
 
 PluginCoreAreaExtractor::PluginCoreAreaExtractor(const eckit::Configuration& conf) : 
@@ -76,8 +76,7 @@ void PluginCoreAreaExtractor::setup() {
     data_.reset( reader_->extractData(config_) );
 
     // Construct the data writer
-    // writer_.reset( new DataWriterCSV{} );
-    writer_.reset( new DataWriterCOVJSON{} );
+    writer_.reset( DataWriterFactory::instance().build(config_.outputStrategy()) );
 }
 
 
@@ -94,13 +93,7 @@ void PluginCoreAreaExtractor::run() {
     reader_->updateData(*data_);
 
     // Write data
-    globaldata_.reset(data_->gather(0));
-    writer_->writeData(filename, *globaldata_);
-
-    // // Write data
-    // writer_->writeData(filename, *data_);
-
-
+    writer_->writeData(filename, *data_);
 };
 
 

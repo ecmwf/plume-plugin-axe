@@ -27,6 +27,8 @@ public:
 
     const std::vector<std::string>& users() const {return users_;}
     const std::vector<std::string>& parameters() const {return params_;}
+    
+    const std::string& outputStrategy() const {return outputStrategy_;}
 
     friend std::ostream& operator<<(std::ostream& ss, const PluginConfig& obj);
 

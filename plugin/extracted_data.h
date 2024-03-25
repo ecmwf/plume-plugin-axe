@@ -72,7 +72,7 @@ public:
     bool isEmpty() const { return !point_idxs_.size(); }
 
     // Collect data in a rank
-    ExtractedData* gather(int collectRank);
+    ExtractedData* gather(int collectRank) const;
 
     // Filter the data according to user name
     ExtractedData filterUser(const std::string& userName) const ;

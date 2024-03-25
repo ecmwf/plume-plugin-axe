@@ -1,54 +1,82 @@
 #pragma once
 
+#include <mutex>
 #include "plugin_types.h"
 #include "extracted_data.h"
 
-#include "eckit/config/YAMLConfiguration.h"
+#include "eckit/config/LocalConfiguration.h"
 
 
 namespace area_extractor {
 
 
-// A "Stateful" data writer
 class DataWriter {
 public:
-    DataWriter(){};
+    DataWriter(const eckit::Configuration& config) : config_{config} {};
     virtual ~DataWriter(){};
     virtual void writeData(const std::string& filename, const ExtractedData& data) const = 0;
+    constexpr static const char* type() { return "DataWriter"; }
+protected:
+    eckit::LocalConfiguration config_;
+};
+
+
+// fwd declaration
+class DataWriterBuilderBase;
+
+
+// factory (registers/deregisters builders and calls "build")
+class DataWriterFactory {
+
+public:  // methods
+    static DataWriterFactory& instance();
+
+    void enregister(const std::string& name, const DataWriterBuilderBase& builder);
+    void deregister(const std::string& name);
+    std::vector<std::string> list_registered();
+
+    DataWriter* build(const std::string& name, const eckit::Configuration& config = eckit::LocalConfiguration{}) const;
+
+private:  // methods
+    // Only one instance can be built, inside instance()
+    DataWriterFactory();
+    ~DataWriterFactory();
+
+private:  // members
+    mutable std::mutex mutex_;
+
+    std::map<std::string, std::reference_wrapper<const DataWriterBuilderBase>> builders_;
+};
+
+
+// base builder
+class DataWriterBuilderBase {
+public:  // methods
+    // Only instantiate from subclasses
+    DataWriterBuilderBase(const std::string& name);
+    virtual ~DataWriterBuilderBase();
+
+    virtual DataWriter* make(const eckit::Configuration& config) const = 0;
+
+public:  // members
+    std::string name_;
+};
+
+
+// a concrete builder for a specific DataWriter type
+template <typename T>
+class DataWriterBuilder : public DataWriterBuilderBase {
+public:  // methods
+    // The name of the builder is taken from the type of the built object
+    DataWriterBuilder() : DataWriterBuilderBase(T::type()) {}
+
+    ~DataWriterBuilder() override {}
+
+    DataWriter* make(const eckit::Configuration& config) const override { return new T(config); }
 };
 
 
 
-// ------------ CSV writer ---------------
-class DataWriterCSV : public DataWriter {
-public:
-    DataWriterCSV() : DataWriter() {};
-    virtual void writeData(const std::string& filename, const ExtractedData& data) const ;
-};
- 
-
-// ------------ COVJSON writer ---------------
-class DataWriterCOVJSON : public DataWriter {
-public:
-    DataWriterCOVJSON();
-    virtual void writeData(const std::string& filename, const ExtractedData& data) const ;
-
-private:
-
-    std::string assembleCOVJSON(const std::string& user, const std::vector<int>& areas, const ExtractedData& data, int& indent) const ;
-    std::string assembleCoverages(const std::string& user, const std::vector<int>& areas, const ExtractedData& data, int& indent) const ;
-};
-
-
-// ------------ NetCDF writer ---------------
-class DataWriterNETCDF : public DataWriter {
-public:
-    DataWriterNETCDF();
-    virtual void writeData(const std::string& filename, const ExtractedData& data) const ;
-};
-
-
-// ------------------------------------------------------------------------------------
 
 
 } // namespace area_extractor
