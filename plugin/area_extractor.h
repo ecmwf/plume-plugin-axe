@@ -29,11 +29,11 @@ namespace area_extractor {
 
 
 // ==========================================================================================
-class PluginCoreAreaExtractor : public plume::PluginCore {
+class AreaExtractorCore : public plume::PluginCore {
 public:
-    PluginCoreAreaExtractor(const eckit::Configuration& conf);
+    AreaExtractorCore(const eckit::Configuration& conf);
 
-    ~PluginCoreAreaExtractor();
+    ~AreaExtractorCore();
 
     void setup() override;
 
@@ -41,7 +41,7 @@ public:
 
     void teardown() override;
 
-    constexpr static const char* type() { return "AreaExtractor-plugincore"; }
+    constexpr static const char* type() { return "area-extractor-core"; }
 
 private:
 
@@ -97,7 +97,7 @@ public:
 
     std::string gitsha1(unsigned int count) const override { return "undefined"; }
 
-    virtual std::string plugincoreName() const override { return PluginCoreAreaExtractor::type(); }
+    virtual std::string plugincoreName() const override { return AreaExtractorCore::type(); }
 };
 // ==========================================================================================
 

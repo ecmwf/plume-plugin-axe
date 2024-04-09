@@ -40,20 +40,20 @@ const AreaExtractor& AreaExtractor::instance() {
     return instance;
 }
 
-// PluginCoreAreaExtractor
-static plume::PluginCoreBuilder<PluginCoreAreaExtractor> pluginCorelBuilderAreaExtractor;
+// AreaExtractorCore
+static plume::PluginCoreBuilder<AreaExtractorCore> pluginCorelBuilderAreaExtractor;
 
 
-PluginCoreAreaExtractor::PluginCoreAreaExtractor(const eckit::Configuration& conf) : 
+AreaExtractorCore::AreaExtractorCore(const eckit::Configuration& conf) : 
     PluginCore(conf), 
     config_{conf, AreaExtractor::requestedFields()} {
 
 }
 
 
-PluginCoreAreaExtractor::~PluginCoreAreaExtractor() {}
+AreaExtractorCore::~AreaExtractorCore() {}
 
-void PluginCoreAreaExtractor::setup() {
+void AreaExtractorCore::setup() {
 
     // print requests
     if (eckit::mpi::comm().rank() == 0) {
@@ -78,7 +78,7 @@ void PluginCoreAreaExtractor::setup() {
 }
 
 
-void PluginCoreAreaExtractor::run() {
+void AreaExtractorCore::run() {
 
     int timeStep = modelData().getInt("NSTEP");
     int procID = eckit::mpi::comm().rank();
@@ -95,7 +95,7 @@ void PluginCoreAreaExtractor::run() {
 };
 
 
-void PluginCoreAreaExtractor::teardown() {
+void AreaExtractorCore::teardown() {
     // nothing to do here..
 };
 
