@@ -54,7 +54,7 @@ private:
     std::vector<std::string> users_;
 
     // output strategy
-    std::string outputStrategy_; // [ process_csv | covjson ]
+    std::string outputStrategy_; // [ CSV | CovJSON ]
 
     // user requests
     std::vector<UserRequest> requests_;

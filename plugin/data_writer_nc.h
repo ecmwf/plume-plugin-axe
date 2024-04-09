@@ -15,7 +15,7 @@ class DataWriterNETCDF : public DataWriter {
 public:
     DataWriterNETCDF(const eckit::Configuration& config);
     virtual void writeData(const std::string& filename, const ExtractedData& data) const ;
-    constexpr static const char* type() { return "DataWriterNETCDF"; }
+    constexpr static const char* type() { return "NetCDF"; }
 };
 
 } // namespace area_extractor

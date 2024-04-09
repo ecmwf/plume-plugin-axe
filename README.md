@@ -1,3 +1,3 @@
 # plume-plugin-axe
 
-Plume plugin that extracts field values at a lat/lon area.
+Area-Extraction Plume Plugin to extract field values in pre-defined areas.

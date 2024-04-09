@@ -33,9 +33,7 @@ namespace area_extractor {
 
 REGISTER_LIBRARY(PluginAreaExtractor)
 
-PluginAreaExtractor::PluginAreaExtractor() : Plugin("PluginAreaExtractor"){};
-
-PluginAreaExtractor::~PluginAreaExtractor(){};
+PluginAreaExtractor::PluginAreaExtractor() : Plugin("AreaExtractor"){};
 
 const PluginAreaExtractor& PluginAreaExtractor::instance() {
     static PluginAreaExtractor instance;

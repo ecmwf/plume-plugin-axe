@@ -36,11 +36,11 @@ public:
 
     ~PluginCoreAreaExtractor();
 
-    virtual void setup() override;
+    void setup() override;
 
-    virtual void run() override;
+    void run() override;
 
-    virtual void teardown() override;
+    void teardown() override;
 
     constexpr static const char* type() { return "AreaExtractor-plugincore"; }
 
@@ -65,12 +65,11 @@ private:
 
 
 // ==========================================================================================
+/// TODO: remove repetition os Plugin
 class PluginAreaExtractor : public plume::Plugin {
 
 public:
     PluginAreaExtractor();
-
-    ~PluginAreaExtractor();
 
     static std::vector<std::string> requestedFields() {
         std::vector<std::string> vec = {

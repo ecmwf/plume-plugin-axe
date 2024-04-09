@@ -16,7 +16,7 @@ PluginConfig::PluginConfig(const eckit::Configuration& conf, const std::vector<s
     checkUserConfig();
 
     // output strategy
-    outputStrategy_ = conf.getString("output_strategy");
+    outputStrategy_ = conf.getString("writer");
 
     // extract user requests from the configuration file
     std::vector<eckit::LocalConfiguration> requests = conf.getSubConfigurations("requests");
@@ -26,23 +26,14 @@ PluginConfig::PluginConfig(const eckit::Configuration& conf, const std::vector<s
     for (const auto& conf_req : requests) {
 
         std::string user = conf_req.getString("user");
-        std::string s3_url = conf_req.getString("s3_url");
-        std::vector<eckit::LocalConfiguration> areas = conf_req.getSubConfigurations("extraction_areas");
 
-        UserRequest req(user, s3_url);
+        // fill-in use request
+        requests_.push_back(UserRequest(conf_req));
 
-        for (const auto& area : areas) {
-            double north = area.getDouble("north");
-            double south = area.getDouble("south");
-            double east = area.getDouble("east");
-            double west = area.getDouble("west");
-            req.add_area(north ,south ,east ,west);
+        // map user->uid (NB: only one request entry per user admitted)
+        if (user_to_uid_.find(user) != user_to_uid_.end()) {
+            eckit::Log::warning() << "User: " << user << " has multiple requests! => only using last one in list." << std::endl;
         }
-
-        // fill-in requests
-        requests_.push_back(req);
-
-        // map user->uid
         user_to_uid_.insert(std::make_pair(user,user_counter++));
     }
 

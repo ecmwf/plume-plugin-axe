@@ -16,7 +16,7 @@ class DataWriterCSV : public DataWriter {
 public:
     DataWriterCSV(const eckit::Configuration& config);
     virtual void writeData(const std::string& filename, const ExtractedData& data) const ;
-    constexpr static const char* type() { return "DataWriterCSV"; }
+    constexpr static const char* type() { return "CSV"; }
 };
 
 } // namespace area_extractor
