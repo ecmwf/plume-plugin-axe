@@ -34,21 +34,6 @@ public:
     }
 
 
-    static std::string metadata_templ(int& indent) { 
-        std::string ind(indent, ' ');
-        return std::string(""
-            +ind+"{\n"
-            +ind+"  \"class\": \"od\",\n"
-            +ind+"  \"stream\": \"oper\",\n"
-            +ind+"  \"levtype\": \"pl\",\n"
-            +ind+"  \"date\": \"20170101\",\n"
-            +ind+"  \"step\": \"0\",\n"
-            +ind+"  \"number\": \"0\"\n"
-            +ind+"}"
-        );
-    }
-
-
     static std::string domain_templ(const std::string& tvalue, const std::string& values, int& indent) { 
 
         std::string ind(indent, ' ');
@@ -68,11 +53,10 @@ public:
     }
 
 
-    static std::string coverage_templ(const std::string& metadata, const std::string& domain, const std::string& ranges, int& indent) { 
+    static std::string coverage_templ(const std::string& domain, const std::string& ranges, int& indent) { 
         std::string ind(indent, ' ');
         return std::string(""
             +ind+"{\n"
-            +ind+"  \"area:metadata\": "+metadata+",\n"
             +ind+"  \"type\": \"Coverage\",\n"
             +ind+"  \"domain\": "+domain+",\n"
             +ind+"  \"ranges\": {"+ranges+"}\n"

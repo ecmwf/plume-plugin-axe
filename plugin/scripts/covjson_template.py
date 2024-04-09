@@ -7,14 +7,6 @@
 #     "domainType": "MultiPoint",
 #     "coverages": [
 #         {
-#             "mars:metadata": {
-#                 "class": "od",
-#                 "stream": "oper",
-#                 "levtype": "pl",
-#                 "date": "20170101",
-#                 "step": "0",
-#                 "number": "0",
-#             },
 #             "type": "Coverage",
 #             "domain": {
 #                 "type": "Domain",
@@ -53,14 +45,6 @@
 #             },
 #         },
 #         {
-#             "mars:metadata": {
-#                 "class": "od",
-#                 "stream": "oper",
-#                 "levtype": "pl",
-#                 "date": "20170101",
-#                 "step": "1",
-#                 "number": "0",
-#             },
 #             "type": "Coverage",
 #             "domain": {
 #                 "type": "Domain",
@@ -136,15 +120,6 @@ range_templ = {
     "values": [] # e.g. [111.11, 222.22, 333.33],
 }
 
-metadata_templ = {
-    "class": "od",
-    "stream": "oper",
-    "levtype": "pl",
-    "date": "20170101",
-    "step": "0",
-    "number": "0"
-}
-
 domain_templ = {
     "type": "Domain",
     "axes": {
@@ -157,9 +132,8 @@ domain_templ = {
     }
 }
 
-# aggregate: range, metadata, domain -> coverage
+# aggregate: range, domain -> coverage
 coverage_templ = {
-    "area:metadata": {},
     "type": "Coverage",
     "domain": {},
     "ranges": {}

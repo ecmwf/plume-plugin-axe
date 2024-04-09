@@ -96,11 +96,7 @@ std::string DataWriterCOVJSON::assembleCoverages(const std::string& user, const 
     std::stringstream coverages_ss;
 
     // prepare domain
-    std::string tvalue = "\"2017-01-01T00:00:00\""; /// TODO: this needs to be changed...
-
-    // metadata /// TODO: this needs to be changed...
-    std::string metadata = TemplatesCOVJSON::metadata_templ(indent);
-
+    std::string tvalue = "\"\""; // (date, e.g: 2017-01-01T00:00:00) 
 
     std::string ind_latlon(indent+16,' ');
     std::string ind_values(indent+13,' ');
@@ -153,7 +149,7 @@ std::string DataWriterCOVJSON::assembleCoverages(const std::string& user, const 
         }
 
         // assemble coverage
-        std::string coverage = TemplatesCOVJSON::coverage_templ(metadata, domain, ranges_ss.str(), indent);
+        std::string coverage = TemplatesCOVJSON::coverage_templ(domain, ranges_ss.str(), indent);
 
         coverages_ss << coverage;
         if (iarea != areas.size()-1) coverages_ss << ",\n";

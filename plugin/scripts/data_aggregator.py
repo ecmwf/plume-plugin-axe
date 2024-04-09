@@ -6,7 +6,6 @@ import copy
 import pandas as pd
 
 from covjson_template import range_templ
-from covjson_template import metadata_templ
 from covjson_template import domain_templ
 from covjson_template import coverage_templ
 from covjson_template import crs_templ
@@ -109,9 +108,6 @@ class DataAggregator:
 
             # Append coverage lat/lon values
             coverage = copy.deepcopy(coverage_templ)
-
-            # Coverage metadata (TODO: metadata still to be defined!)
-            coverage["area:metadata"] = copy.deepcopy(metadata_templ)
 
             # coverage domain
             coverage["domain"] = copy.deepcopy(domain_templ)            
