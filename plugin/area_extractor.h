@@ -65,11 +65,10 @@ private:
 
 
 // ==========================================================================================
-/// TODO: remove repetition os Plugin
-class PluginAreaExtractor : public plume::Plugin {
+class AreaExtractor : public plume::Plugin {
 
 public:
-    PluginAreaExtractor();
+    AreaExtractor();
 
     static std::vector<std::string> requestedFields() {
         std::vector<std::string> vec = {
@@ -93,7 +92,7 @@ public:
     }
 
     // Return the static instance
-    static const PluginAreaExtractor& instance();
+    static const AreaExtractor& instance();
 
     std::string version() const override { return "0.1.0"; }
 

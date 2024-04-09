@@ -31,12 +31,12 @@
 namespace area_extractor {
 
 
-REGISTER_LIBRARY(PluginAreaExtractor)
+REGISTER_LIBRARY(AreaExtractor)
 
-PluginAreaExtractor::PluginAreaExtractor() : Plugin("AreaExtractor"){};
+AreaExtractor::AreaExtractor() : Plugin("AreaExtractor"){};
 
-const PluginAreaExtractor& PluginAreaExtractor::instance() {
-    static PluginAreaExtractor instance;
+const AreaExtractor& AreaExtractor::instance() {
+    static AreaExtractor instance;
     return instance;
 }
 
@@ -46,7 +46,7 @@ static plume::PluginCoreBuilder<PluginCoreAreaExtractor> pluginCorelBuilderAreaE
 
 PluginCoreAreaExtractor::PluginCoreAreaExtractor(const eckit::Configuration& conf) : 
     PluginCore(conf), 
-    config_{conf, PluginAreaExtractor::requestedFields()} {
+    config_{conf, AreaExtractor::requestedFields()} {
 
 }
 
@@ -61,7 +61,7 @@ void PluginCoreAreaExtractor::setup() {
     }
 
     // prepare the field reader
-    std::vector<std::string> fieldNames = PluginAreaExtractor::requestedFields();
+    std::vector<std::string> fieldNames = AreaExtractor::requestedFields();
     std::vector<atlas::Field> fields;
     for(auto& name: fieldNames){
         fields.push_back(modelData().getAtlasFieldShared(name));

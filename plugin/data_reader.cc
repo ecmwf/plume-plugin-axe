@@ -59,14 +59,6 @@ ExtractedData* DataReader::extractData(const PluginConfig& config) {
                     int area_id = area.id();
                     if (area.isPointInside(pointLat, pointLon)) {
 
-                        // for (int iField=0; iField<fields_.size(); iField++){
-                        //     for (int iLev=0; iLev<nlevs; iLev++){
-                        //         int user_uid = config.user_uid(request.user());
-                        //         int param_uid = config.param_uid(fields_[iField].name());
-                        //         data->addPoint(user_uid, area.id(), iPt, pointLat, pointLon, iLev, param_uid, fieldViewVector[iField](iPt,iLev));
-                        //     }
-                        // }
-
                         // extract values at each vert level
                         for (int iLev=0; iLev<nlevs; iLev++){
 
