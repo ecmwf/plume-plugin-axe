@@ -86,6 +86,13 @@ void AreaExtractorCore::run() {
     std::stringstream ss;
     ss << "extracted-areas-step" << timeStep << "-proc" << procID;
     std::string filename{ss.str()};
+
+    // check if the envaronment variable PLUME_PLUGINS_OUTPUT_DIR is set,
+    // is so, prepend it to the filename
+    const char* outputDir = std::getenv("PLUME_PLUGINS_OUTPUT_DIR");
+    if (outputDir) {
+        filename = std::string(outputDir) + "/" + filename;
+    }
             
     // Update data
     reader_->updateData(*data_);
