@@ -46,7 +46,8 @@ static plume::PluginCoreBuilder<AreaExtractorCore> pluginCorelBuilderAreaExtract
 
 AreaExtractorCore::AreaExtractorCore(const eckit::Configuration& conf) : 
     PluginCore(conf), 
-    config_{conf, AreaExtractor::requestedFields()} {
+    config_{conf, AreaExtractor::requestedFields()},
+    runsEvery_{conf.getInt("runs_every", 1)} {
 
 }
 
@@ -80,8 +81,13 @@ void AreaExtractorCore::setup() {
 
 void AreaExtractorCore::run() {
 
-    int timeStep = modelData().getInt("NSTEP");
     int procID = eckit::mpi::comm().rank();
+    int timeStep = modelData().getInt("NSTEP");
+
+    // Check if we should run
+    if (timeStep % runsEvery_ != 0) {
+        return;
+    }
 
     std::stringstream ss;
     ss << "extracted-areas-step" << timeStep << "-proc" << procID;

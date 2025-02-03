@@ -45,6 +45,9 @@ public:
 
 private:
 
+    // runs every N steps
+    int runsEvery_;
+
     // plugin configuration
     PluginConfig config_;
 
