@@ -14,6 +14,7 @@
 
 #include "atlas/array.h"
 #include "atlas/functionspace/NodeColumns.h"
+#include "eckit/exception/Exceptions.h"
 
 
 #include "plugin_types.h"
@@ -54,6 +55,15 @@ ExtractedData* DataReader::extractData(const PluginConfig& config) {
     double pointLon;
 
     int nlevs = fields_[0].levels();
+
+    // check that all fields have the same number of levels
+    for (const auto& field: fields_) {
+        if (field.levels() != nlevs) {
+            eckit::Log::error() << "DataReader::extractData: fields have different number of levels" << std::endl;
+            eckit::Log::error() << "Field[0] has " << nlevs << " levels" << ", while " << field.name() << " has " << field.levels() << " levels!" << std::endl;
+            throw eckit::UserError("DataReader::extractData num levels error!");
+        }
+    }
 
     for (int iPt = 0; iPt < lonLatArray.shape(0); iPt++) {
 
