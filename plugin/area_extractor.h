@@ -75,7 +75,8 @@ public:
     static std::vector<std::string> requestedFields() {
         std::vector<std::string> vec = {
             "u",
-            "v" 
+            "v",
+            "t"
         };
         return vec;
     }

@@ -81,7 +81,7 @@ std::string DataWriterCOVJSON::assembleCOVJSON(const std::string& user, const st
     std::string referencing = TemplatesCOVJSON::crs_templ(indent);
 
     // parameter definitions    
-    std::string parameters = TemplatesCOVJSON::parameter_definitions(indent);
+    std::string parameters = TemplatesCOVJSON::parameter_definitions(indent, data.config().parameters());
 
     // main template
     std::string json = TemplatesCOVJSON::covjson_template(coverages, referencing, parameters, indent);

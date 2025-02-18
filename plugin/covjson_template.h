@@ -111,24 +111,21 @@ public:
     }
 
 
-    static std::string parameter_definitions(int& indent) { 
-        std::string ind(indent, ' ');
-        return std::string(""
-            +ind+"{\n"
-            +ind+"  \"u\" : {\n"
-            +ind+"    \"type\": \"Parameter\",\n"
-            +ind+"    \"description\": \"u-component of wind speed\",\n"
-            +ind+"    \"unit\": {\"symbol\": \"m/s\"},\n"
-            +ind+"    \"observedProperty\": {\"id\": \"v\", \"label\": {\"en\": \"u-component of wind speed\"}}\n"
-            +ind+"  },\n"
-            +ind+"  \"v\" : {\n"
-            +ind+"    \"type\": \"Parameter\",\n"
-            +ind+"    \"description\": \"v-component of wind speed\",\n"
-            +ind+"    \"unit\": {\"symbol\": \"m/s\"},\n"
-            +ind+"    \"observedProperty\": {\"id\": \"v\", \"label\": {\"en\": \"v-component of wind speed\"}}\n"
-            +ind+"  }"
-            +ind+"}"
-        );
+    static std::string parameter_definitions(int& indent, const std::vector<std::string>& paramNames) { 
+        std::string ind(indent+2, ' ');
+
+        std::string params;
+        for (size_t iname=0; iname<paramNames.size(); iname++){
+            params += std::string(""
+                                  +ind+"{\n"
+                                  +ind+"\"" + paramNames[iname] + "\" : {\n"
+                                  +ind+"  \"type\": \"Parameter\"\n"
+                                  +ind+"}");
+            // add comma if not last
+            if (iname != paramNames.size()-1) params += ",\n";
+          }
+
+        return params;
     }
 
 };
