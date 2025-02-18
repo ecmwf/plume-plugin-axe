@@ -40,3 +40,5 @@ var/
 *.swp
 *.txt.user
 
+config/plume-config-t21.json
+config/plume-config.json

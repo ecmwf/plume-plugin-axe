@@ -5,6 +5,7 @@
             "lib": "plugin_area_extractor",
             "core-config": {
                 "writer": "CovJSON",
+                "runs_every": 2,
                 "requests": [
                     {
                         "user": "user-1",
