@@ -29,6 +29,9 @@ public:
     ~UserRequest();
 
     const std::string& user() const { return user_; }
+    
+    const std::string& tag() const { return tag_; }
+
     const std::vector<ExtractionArea>& areas() const {return areas_;}
 
     friend std::ostream& operator<<(std::ostream& ss, const UserRequest& obj);
@@ -39,7 +42,13 @@ private:
 
 private:
 
+    // User name
     std::string user_;
+
+    // Tag
+    std::string tag_;
+
+    // Requested extraction areas
     std::vector<ExtractionArea> areas_;
 };
 

@@ -19,8 +19,11 @@ UserRequest::UserRequest(const eckit::Configuration& config) {
 
     std::vector<eckit::LocalConfiguration> extractions = config.getSubConfigurations("extractions");
 
-    // user name
-    user_ = config.getString("user");
+    // user name (optional)
+    user_ = config.getString("user", "default-user");
+
+    // tag (optional)
+    tag_ = config.getString("tag", "default-tag");
 
     // extraction areas
     for (const auto& extraction : extractions) {

@@ -9,41 +9,29 @@
                 "requests": [
                     {
                         "user": "user-1",
+                        "tag": "extraction_area_1",
                         "extractions": [
                             {"north": 5, "south": 4, "east": 15, "west": 14},
                             {"north": 6, "south": 5, "east": 16, "west": 15},
                             {"north": 7, "south": 6, "east": 17, "west": 16}
-                        ],
-                        "destinations": [
-                            { "protocol": "s3", "location": "s3://<path>" },
-                            { "protocol": "webdav", "location": "https://<path>" },
-                            { "protocol": "mars", "location": "class=od,...." }
                         ]
                     },
                     {
                         "user": "user-2",
+                        "tag": "extraction_area_2",
                         "extractions": [
                             {"north": 15, "south": 14, "east": 8, "west": 7},
                             {"north": 16, "south": 15, "east": 9, "west": 8},
                             {"north": 17, "south": 16, "east": 10, "west": 9}
-                        ],
-                        "destinations": [
-                            { "protocol": "s3", "location": "s3://<path>" },
-                            { "protocol": "webdav", "location": "https://<path>" },
-                            { "protocol": "mars", "location": "class=od,...." }
                         ]
                     },
                     {
                         "user": "user-3",
+                        "tag": "extraction_area_3",
                         "extractions": [
                             {"north": -20, "south": -21, "east": 88, "west": 87},
                             {"north": -21, "south": -22, "east": 98, "west": 97},
                             {"north": -22, "south": -23, "east": 108, "west": 107}
-                        ],
-                        "destinations": [
-                            { "protocol": "s3", "location": "s3://<path>" },
-                            { "protocol": "webdav", "location": "https://<path>" },
-                            { "protocol": "mars", "location": "class=od,...." }
                         ]
                     }
                 ]

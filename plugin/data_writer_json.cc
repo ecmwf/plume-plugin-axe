@@ -39,10 +39,12 @@ void DataWriterCOVJSON::writeData(const std::string& filename, const ExtractedDa
 
     // Write only if it owns values
     if (!globalData->isEmpty()) {
-
+        
+        size_t i_request = 0;
         for (const auto& request : globalData->config().requests()) {
 
             std::string user = request.user();
+            std::string tag = request.tag();
             std::vector<ExtractionArea> areas = request.areas();
 
             std::vector<int> userAreaIdxs(areas.size());
@@ -53,9 +55,12 @@ void DataWriterCOVJSON::writeData(const std::string& filename, const ExtractedDa
             
             std::string covjson = assembleCOVJSON(user, userAreaIdxs, userData, indent);
 
-
+            // compose the filename
             std::stringstream ss;
-            ss << filename << "-" << user << ".json";
+            ss << filename 
+               << "_user-" << user
+               << "_tag-" << tag
+               << "_req-" << i_request << ".json";
             std::string filename_covjson{ss.str()};
 
             try {
@@ -66,6 +71,8 @@ void DataWriterCOVJSON::writeData(const std::string& filename, const ExtractedDa
             } catch (std::exception& e) {
                 eckit::Log::warning() << "Error while writing file: " << filename << " -- " << e.what() << std::endl;
             }
+
+            i_request++;
 
         }
     }
