@@ -1,0 +1,44 @@
+# 
+#  (C) Copyright 2023- ECMWF.
+# 
+#  This software is licensed under the terms of the Apache Licence Version 2.0
+#  which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+# 
+#  In applying this licence, ECMWF does not waive the privileges and immunities
+#  granted to it by virtue of its status as an intergovernmental organisation nor
+#  does it submit to any jurisdiction.
+# 
+
+ecbuild_add_test( TARGET plugin_axe_test_area
+                  SOURCES
+                    test_area.cc
+                  LIBS
+                    plugin_area_extractor
+                    eckit
+                    plume_plugin
+)
+
+ecbuild_add_test( TARGET plugin_axe_test_reader
+                  SOURCES
+                    test_reader.cc
+                  LIBS
+                    plugin_area_extractor
+                    eckit
+                    atlas
+)
+
+ecbuild_add_test( TARGET plugin_axe_test_config
+                  SOURCES
+                    test_config.cc
+                  LIBS
+                    plugin_area_extractor
+                    eckit
+)
+
+ecbuild_add_test( TARGET plugin_axe_test_request
+                  SOURCES
+                    test_request.cc
+                  LIBS
+                    plugin_area_extractor
+                    eckit
+)

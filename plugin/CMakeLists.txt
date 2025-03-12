@@ -58,3 +58,6 @@ ecbuild_add_library(
         atlas
         plume_plugin
 )
+
+# tests
+add_subdirectory(tests)
