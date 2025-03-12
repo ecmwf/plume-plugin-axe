@@ -31,15 +31,6 @@
 namespace area_extractor {
 
 
-REGISTER_LIBRARY(AreaExtractor)
-
-AreaExtractor::AreaExtractor() : Plugin("AreaExtractor"){};
-
-const AreaExtractor& AreaExtractor::instance() {
-    static AreaExtractor instance;
-    return instance;
-}
-
 // AreaExtractorCore
 static plume::PluginCoreBuilder<AreaExtractorCore> pluginCorelBuilderAreaExtractor;
 
@@ -57,9 +48,7 @@ AreaExtractorCore::~AreaExtractorCore() {}
 void AreaExtractorCore::setup() {
 
     // print requests
-    if (eckit::mpi::comm().rank() == 0) {
-        std::cout << config_ << std::endl;
-    }
+    eckit::Log::info() << "AreaExtractorCore::setup() - requests: " << config_ << std::endl;
 
     // prepare the field reader
     std::vector<std::string> fieldNames = AreaExtractor::requestedFields();
@@ -69,7 +58,7 @@ void AreaExtractorCore::setup() {
     }
 
     // Create the reader
-    reader_.reset( new DataReader{fields} );
+    reader_ = std::make_unique<DataReader>(fields);
 
     // Extract data
     data_.reset( reader_->extractData(config_) );
@@ -111,6 +100,16 @@ void AreaExtractorCore::run() {
 void AreaExtractorCore::teardown() {
     // nothing to do here..
 };
+
+
+REGISTER_LIBRARY(AreaExtractor)
+
+AreaExtractor::AreaExtractor() : Plugin("AreaExtractor"){};
+
+const AreaExtractor& AreaExtractor::instance() {
+    static AreaExtractor instance;
+    return instance;
+}
 
 
 }  // namespace area_extractor
