@@ -9,6 +9,8 @@
 #  does it submit to any jurisdiction.
 # 
 
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+
 # Area Extractor Plugin
 ecbuild_add_library(
     TARGET plugin_area_extractor
@@ -45,8 +47,8 @@ ecbuild_add_library(
         ${PLUGINS_DEFINITIONS}        
     
     PUBLIC_INCLUDES
-       $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/src>
-       $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>
+       $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/src/plume-plugin-axe>
+       $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/plume-plugin-axe>
     
     PRIVATE_INCLUDES
         "${eckit_INCLUDE_DIRS}"
@@ -58,6 +60,3 @@ ecbuild_add_library(
         atlas
         plume_plugin
 )
-
-# tests
-add_subdirectory(tests)

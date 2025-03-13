@@ -10,8 +10,8 @@
  */
 #include "eckit/testing/Test.h"
 
-#include "plugin/area.h"
-#include "plugin/area_extractor.h"
+#include "area.h"
+#include "area_extractor.h"
 
 
 using namespace eckit::testing;

@@ -11,7 +11,7 @@
 #include "eckit/testing/Test.h"
 #include "eckit/config/YAMLConfiguration.h"
 
-#include "plugin/plugin_config.h"
+#include "plugin_config.h"
 
 
 using namespace eckit::testing;

@@ -30,14 +30,11 @@ if( HAVE_PLUME_PLUGINS_SINGLE_PRECISION )
   list(APPEND PLUGINS_DEFINITIONS WITH_PLUME_PLUGINS_SINGLE_PRECISION )
 endif()
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+## Sources
+add_subdirectory(src)
 
-## Config file
-set(CONFIG_PATH ${CMAKE_CURRENT_SOURCE_DIR}/config)
-add_subdirectory(config)
-
-## Plugin
-add_subdirectory(plugin)
+## Tests
+add_subdirectory(tests)
 
 # finalize
 ecbuild_install_project( NAME ${PROJECT_NAME} )

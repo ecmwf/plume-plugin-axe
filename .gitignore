@@ -41,7 +41,7 @@ var/
 *.txt.user
 
 # auto-generated config files
-config/plume-config-t21.json
-config/plume-config.json
-config/dev/plume-config-t21.json
-config/dev/plume-config.json
+src/configs/plume-config-t21.json
+src/configs/plume-config.json
+src/configs/dev/plume-config-t21.json
+src/configs/dev/plume-config.json

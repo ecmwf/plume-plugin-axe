@@ -23,9 +23,9 @@
 #include "atlas/meshgenerator.h"
 
 
-#include "plugin/data_reader.h"
-#include "plugin/extracted_data.h"
-#include "plugin/plugin_config.h"
+#include "data_reader.h"
+#include "extracted_data.h"
+#include "plugin_config.h"
 
 
 using namespace eckit::testing;
