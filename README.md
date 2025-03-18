@@ -1,5 +1,7 @@
 <p align="center">
-  <img src="https://img.shields.io/badge/ESEE-Foundation-orange" alt="ESEE Foundation">
+  <a href="https://github.com/ecmwf/codex/blob/main/ESEE/readme.md">
+    <img src="https://img.shields.io/badge/Production-Chain-blue" alt="ESEE Production Chain">
+  </a>
   <a href="https://github.com/ecmwf/codex/blob/refs/heads/main/Project%20Maturity/readme.md">
     <img src="https://img.shields.io/badge/Maturity-Sandbox-yellow" alt="Maturity Sandbox">
   </a>
