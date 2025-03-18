@@ -13,7 +13,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 # Area Extractor Plugin
 ecbuild_add_library(
-    TARGET plugin_area_extractor
+    TARGET ${PLUGIN_AXE_LIB_NAME}
 
     SOURCES
         area.h

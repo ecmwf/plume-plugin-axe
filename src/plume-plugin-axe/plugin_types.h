@@ -11,7 +11,7 @@
 #pragma once
 
 // Define the Atlas fields precision
-#ifdef WITH_PLUME_PLUGINS_SINGLE_PRECISION
+#ifdef WITH_PLUME_PLUGIN_AXE_SINGLE_PRECISION
 #define FIELD_TYPE_REAL float
 #else
 #define FIELD_TYPE_REAL double

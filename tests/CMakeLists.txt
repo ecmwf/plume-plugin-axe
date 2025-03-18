@@ -13,7 +13,7 @@ ecbuild_add_test( TARGET plugin_axe_test_area
                   SOURCES
                     test_area.cc
                   LIBS
-                    plugin_area_extractor
+                    ${PLUGIN_AXE_LIB_NAME}
                     eckit
                     plume_plugin
 )
@@ -22,7 +22,7 @@ ecbuild_add_test( TARGET plugin_axe_test_reader
                   SOURCES
                     test_reader.cc
                   LIBS
-                    plugin_area_extractor
+                    ${PLUGIN_AXE_LIB_NAME}
                     eckit
                     atlas
 )
@@ -31,7 +31,7 @@ ecbuild_add_test( TARGET plugin_axe_test_config
                   SOURCES
                     test_config.cc
                   LIBS
-                    plugin_area_extractor
+                    ${PLUGIN_AXE_LIB_NAME}
                     eckit
 )
 
@@ -39,6 +39,6 @@ ecbuild_add_test( TARGET plugin_axe_test_request
                   SOURCES
                     test_request.cc
                   LIBS
-                    plugin_area_extractor
+                    ${PLUGIN_AXE_LIB_NAME}
                     eckit
 )
