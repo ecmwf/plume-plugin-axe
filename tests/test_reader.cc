@@ -79,7 +79,7 @@ CASE("test reader") {
 
     // create fields
     for (const auto& param: params) {
-        atlas::Field field = fs.createField<double>(atlas::option::name(param));
+        atlas::Field field = fs.createField<FIELD_TYPE_REAL>(atlas::option::name(param));
         fields.push_back(field);
     }
 

@@ -24,21 +24,23 @@ ecbuild_find_package( NAME eckit  VERSION  1.18   REQUIRED )
 ecbuild_find_package( NAME atlas  VERSION  0.32   REQUIRED )
 ecbuild_find_package( NAME plume  VERSION  0.1.0  REQUIRED )               
 
-ecbuild_add_option(FEATURE PLUME_PLUGIN_AXE_SINGLE_PRECISION DESCRIPTION "Compile plugin for single precision fields" DEFAULT OFF)
+# by default, we build the plugin for double precision only
+ecbuild_add_option(FEATURE PLUME_PLUGINS_SINGLE_PRECISION DESCRIPTION "Compile plugin for single precision fields" DEFAULT OFF)
+ecbuild_add_option(FEATURE PLUME_PLUGINS_DOUBLE_PRECISION DESCRIPTION "Compile plugin for double precision fields" DEFAULT ON)
 
-if( HAVE_PLUME_PLUGIN_AXE_SINGLE_PRECISION ) 
+# this option can also be used to build the plugin for single precision (when the plugin is built in a ifs-bundle)
+ecbuild_add_option(FEATURE SINGLE_PRECISION DESCRIPTION "Compile plugin for single precision fields" DEFAULT OFF)
+
+# Definitions
+set(PLUGINS_DEFINITIONS "")
+
+if (HAVE_PLUME_PLUGINS_SINGLE_PRECISION OR HAVE_SINGLE_PRECISION)
   list(APPEND PLUGINS_DEFINITIONS WITH_PLUME_PLUGIN_AXE_SINGLE_PRECISION )
 endif()
 
-# Append the correct extension (SP or DP)
-if (HAVE_PLUME_PLUGIN_AXE_SINGLE_PRECISION)
-    set(PLUGIN_AXE_NAME_EXT "SP")
-else()
-    set(PLUGIN_AXE_NAME_EXT "DP")
+if (HAVE_PLUME_PLUGINS_DOUBLE_PRECISION)
+  list(APPEND PLUGINS_DEFINITIONS WITH_PLUME_PLUGIN_AXE_DOUBLE_PRECISION )
 endif()
-
-set(PLUGIN_AXE_LIB_NAME "plume_plugin_axe_${PLUGIN_AXE_NAME_EXT}")
-
 
 ## Sources
 add_subdirectory(src)

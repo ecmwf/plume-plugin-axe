@@ -11,52 +11,66 @@
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-# Area Extractor Plugin
-ecbuild_add_library(
-    TARGET ${PLUGIN_AXE_LIB_NAME}
+foreach(prec_def ${PLUGINS_DEFINITIONS})
 
-    SOURCES
-        area.h
-        area.cc        
-        plugin_utils.h
-        plugin_utils.cc
-        plugin_config.h
-        plugin_config.cc
-        area_extractor.h
-        area_extractor.cc
+    # target name
+    
+    # set library name based on precision
+    if (prec_def STREQUAL "WITH_PLUME_PLUGIN_AXE_SINGLE_PRECISION")
+        set(PLUGIN_AXE_NAME_EXT "SP")
+    else()
+        set(PLUGIN_AXE_NAME_EXT "DP")
+    endif()
+    set(PLUGIN_AXE_LIB_NAME "plume_plugin_axe.${PLUGIN_AXE_NAME_EXT}")
 
-        data_reader.h
-        data_reader.cc
+    # Area Extractor Plugin
+    ecbuild_add_library(
+        TARGET ${PLUGIN_AXE_LIB_NAME}
 
-        data_writer.h
-        data_writer.cc
-        data_writer_csv.h
-        data_writer_csv.cc
-        data_writer_json.h
-        data_writer_json.cc
-        data_writer_nc.h
-        data_writer_nc.cc
+        SOURCES
+            area.h
+            area.cc        
+            plugin_utils.h
+            plugin_utils.cc
+            plugin_config.h
+            plugin_config.cc
+            area_extractor.h
+            area_extractor.cc
+
+            data_reader.h
+            data_reader.cc
+
+            data_writer.h
+            data_writer.cc
+            data_writer_csv.h
+            data_writer_csv.cc
+            data_writer_json.h
+            data_writer_json.cc
+            data_writer_nc.h
+            data_writer_nc.cc
+            
+            user_request.h
+            user_request.cc
+            plugin_types.h
+            extracted_data.h
+            extracted_data.cc
         
-        user_request.h
-        user_request.cc
-        plugin_types.h
-        extracted_data.h
-        extracted_data.cc
-    
-    DEFINITIONS
-        ${PLUGINS_DEFINITIONS}        
-    
-    PUBLIC_INCLUDES
-       $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/src/plume-plugin-axe>
-       $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/plume-plugin-axe>
-    
-    PRIVATE_INCLUDES
-        "${eckit_INCLUDE_DIRS}"
-        "${CMAKE_SOURCE_DIR}"
-    
-    PRIVATE_LIBS
-        eckit
-        eckit_mpi
-        atlas
-        plume_plugin
-)
+        DEFINITIONS
+            ${prec_def}
+        
+        PUBLIC_INCLUDES
+        $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/src/plume-plugin-axe>
+        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/plume-plugin-axe>
+        
+        PRIVATE_INCLUDES
+            "${eckit_INCLUDE_DIRS}"
+            "${CMAKE_SOURCE_DIR}"
+        
+        PRIVATE_LIBS
+            eckit
+            eckit_mpi
+            atlas
+            plume_plugin
+    )
+
+endforeach()
