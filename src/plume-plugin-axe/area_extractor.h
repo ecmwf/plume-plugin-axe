@@ -83,7 +83,7 @@ public:
 
     plume::Protocol negotiate() override {
         plume::Protocol protocol;
-        protocol.requireAtlasVersion("0.32.0");
+        protocol.requireAtlasVersion("0.31.0");
         protocol.requireInt("NSTEP");
 
         // Request the necessary Atlas fields
