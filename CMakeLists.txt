@@ -21,7 +21,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 ecbuild_find_package( NAME eckit  VERSION  1.18   REQUIRED )
-ecbuild_find_package( NAME atlas  VERSION  0.32   REQUIRED )
+ecbuild_find_package( NAME atlas  VERSION  0.31   REQUIRED )
 ecbuild_find_package( NAME plume  VERSION  0.1.0  REQUIRED )               
 
 # by default, we build the plugin for double precision only
