@@ -9,9 +9,9 @@
 #  does it submit to any jurisdiction.
 # 
 
-cmake_minimum_required( VERSION 3.16 FATAL_ERROR )
+cmake_minimum_required( VERSION 3.25 FATAL_ERROR )
 
-find_package( ecbuild 3.5 REQUIRED HINTS ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../ecbuild)
+find_package( ecbuild 3.13.1 REQUIRED HINTS ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../ecbuild)
 
 project( plume_plugin_axe VERSION 0.1.0 LANGUAGES C CXX Fortran)
 
@@ -20,9 +20,9 @@ ecbuild_enable_fortran( REQUIRED MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/module )
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-ecbuild_find_package( NAME eckit  VERSION  1.18   REQUIRED )
-ecbuild_find_package( NAME atlas  VERSION  0.32   REQUIRED )
-ecbuild_find_package( NAME plume  VERSION  0.1.0  REQUIRED )               
+ecbuild_find_package( NAME eckit  VERSION  1.33.2 REQUIRED )
+ecbuild_find_package( NAME atlas  VERSION  0.46.0 REQUIRED )
+ecbuild_find_package( NAME plume  VERSION  0.5.0  REQUIRED )
 
 # by default, we build the plugin for double precision only
 ecbuild_add_option(FEATURE PLUME_PLUGINS_SINGLE_PRECISION DESCRIPTION "Compile plugin for single precision fields" DEFAULT OFF)

@@ -24,6 +24,8 @@
 #include "user_request.h"
 #include "data_writer.h"
 
+#include "atlas/field/Field.h"
+
 
 namespace area_extractor {
 
@@ -83,12 +85,13 @@ public:
 
     plume::Protocol negotiate() override {
         plume::Protocol protocol;
-        protocol.requireAtlasVersion("0.32.0");
-        protocol.requireInt("NSTEP");
+        protocol.requireAtlasVersion("0.46.0");
+        protocol.requirePlumeVersion("0.5.0");
+        protocol.require<int>("NSTEP");
 
         // Request the necessary Atlas fields
         for (auto& fld: requestedFields()) {
-            protocol.requireAtlasField(fld);
+            protocol.require<atlas::Field>(fld);
         }
 
         return protocol;

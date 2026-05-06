@@ -54,7 +54,7 @@ void AreaExtractorCore::setup() {
     std::vector<std::string> fieldNames = AreaExtractor::requestedFields();
     std::vector<atlas::Field> fields;
     for(auto& name: fieldNames){
-        fields.push_back(modelData().getAtlasFieldShared(name));
+        fields.push_back(modelData().getParam<atlas::Field>(name));
     }
 
     // Create the reader
@@ -71,7 +71,7 @@ void AreaExtractorCore::setup() {
 void AreaExtractorCore::run() {
 
     int procID = eckit::mpi::comm().rank();
-    int timeStep = modelData().getInt("NSTEP");
+    int timeStep = modelData().getParam<int>("NSTEP");
 
     // Check if we should run
     if (timeStep % runsEvery_ != 0) {
