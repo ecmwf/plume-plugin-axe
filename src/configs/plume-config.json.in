@@ -2,7 +2,7 @@
     "plugins": [
         {
             "name": "AreaExtractor",
-            "lib": "plume_plugin_axe_DP",
+            "lib": "plume_plugin_axe.DP",
             "core-config": {
                 "writer": "CovJSON",
                 "runs_every": 2,

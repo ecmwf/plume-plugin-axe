@@ -41,13 +41,13 @@ Build dependencies:
 
 - C/C++ compiler (C++17)
 - Fortran 2008 compiler
-- CMake >= 3.16 --- For use and installation see http://www.cmake.org/
-- ecbuild >= 3.5 --- ECMWF library of CMake macros (https://github.com/ecmwf/ecbuild)
+- CMake >= 3.25 --- For use and installation see http://www.cmake.org/
+- ecbuild >= 3.13.1 --- ECMWF library of CMake macros (https://github.com/ecmwf/ecbuild)
 
 Runtime dependencies:
-  - eckit >= 1.18.0 (https://github.com/ecmwf/eckit)
-  - Atlas >= 0.32.0 (https://github.com/ecmwf/atlas)
-  - Plume >= 0.1.0 (https://github.com/ecmwf/plume)
+  - eckit >= 1.33.2 (https://github.com/ecmwf/eckit)
+  - Atlas >= 0.46.0 (https://github.com/ecmwf/atlas)
+  - Plume >= 0.5.0 (https://github.com/ecmwf/plume)
 
 
 # Installation
