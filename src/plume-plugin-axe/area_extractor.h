@@ -50,8 +50,11 @@ private:
     // runs every N steps
     int runsEvery_;
 
-    // plugin configuration
-    PluginConfig config_;
+    // raw plugin-core configuration
+    eckit::LocalConfiguration coreConfig_;
+
+    // configuration (includes e.g. list of params)
+    std::unique_ptr<PluginConfig> config_;
 
     // field reader
     std::unique_ptr<DataReader> reader_;
@@ -74,25 +77,16 @@ class AreaExtractor : public plume::Plugin {
 public:
     AreaExtractor();
 
-    static std::vector<std::string> requestedFields() {
-        std::vector<std::string> vec = {
-            "u",
-            "v",
-            "t"
-        };
-        return vec;
-    }
-
     plume::Protocol negotiate() override {
         plume::Protocol protocol;
         protocol.requireAtlasVersion("0.46.0");
         protocol.requirePlumeVersion("0.5.0");
         protocol.require<int>("NSTEP");
 
-        // Request the necessary Atlas fields
-        for (auto& fld: requestedFields()) {
-            protocol.require<atlas::Field>(fld);
-        }
+        /**
+         * @note: no Atlas fields are hard-required for this plugin
+         *        parameters must be requested through configuration
+        **/
 
         return protocol;
     }

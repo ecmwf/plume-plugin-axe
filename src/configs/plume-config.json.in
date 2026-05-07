@@ -3,6 +3,20 @@
         {
             "name": "AreaExtractor",
             "lib": "plume_plugin_axe.DP",
+            "parameters": [
+                [
+                    {
+                        "name": "u",
+                        "type": "ATLAS_FIELD",
+                        "height": 70
+                    },
+                    {
+                        "name": "v",
+                        "type": "ATLAS_FIELD",
+                        "height": 70
+                    }
+                ]
+            ],
             "core-config": {
                 "writer": "CovJSON",
                 "runs_every": 2,
