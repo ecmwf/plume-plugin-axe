@@ -36,8 +36,8 @@ static plume::PluginCoreBuilder<AreaExtractorCore> pluginCorelBuilderAreaExtract
 
 
 AreaExtractorCore::AreaExtractorCore(const eckit::Configuration& conf) : 
-    PluginCore(conf), 
-    config_{conf, AreaExtractor::requestedFields()},
+    PluginCore(conf),
+    coreConfig_{conf},
     runsEvery_{conf.getInt("runs_every", 1)} {
 
 }
@@ -47,11 +47,14 @@ AreaExtractorCore::~AreaExtractorCore() {}
 
 void AreaExtractorCore::setup() {
 
+    // setup the specific plugin config that includes the list of parameters available in the data
+    config_ = std::make_unique<PluginConfig>(coreConfig_, modelData().listAvailableParameters("ATLAS_FIELD"));
+
     // print requests
-    eckit::Log::info() << "AreaExtractorCore::setup() - requests: " << config_ << std::endl;
+    eckit::Log::info() << "AreaExtractorCore::setup() - requests: " << *config_ << std::endl;
 
     // prepare the field reader
-    std::vector<std::string> fieldNames = AreaExtractor::requestedFields();
+    std::vector<std::string> fieldNames = config_->parameters();
     std::vector<atlas::Field> fields;
     for(auto& name: fieldNames){
         fields.push_back(modelData().getParam<atlas::Field>(name));
@@ -61,10 +64,10 @@ void AreaExtractorCore::setup() {
     reader_ = std::make_unique<DataReader>(fields);
 
     // Extract data
-    data_.reset( reader_->extractData(config_) );
+    data_.reset( reader_->extractData(*config_) );
 
     // Construct the data writer
-    writer_.reset( DataWriterFactory::instance().build(config_.outputStrategy()) );
+    writer_.reset( DataWriterFactory::instance().build(config_->outputStrategy()) );
 }
 
 

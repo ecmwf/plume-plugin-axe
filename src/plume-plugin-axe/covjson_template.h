@@ -115,15 +115,16 @@ public:
         std::string ind(indent+2, ' ');
 
         std::string params;
+        params += std::string(""+ind+"{\n");
         for (size_t iname=0; iname<paramNames.size(); iname++){
             params += std::string(""
-                                  +ind+"{\n"
                                   +ind+"\"" + paramNames[iname] + "\" : {\n"
                                   +ind+"  \"type\": \"Parameter\"\n"
                                   +ind+"}");
             // add comma if not last
             if (iname != paramNames.size()-1) params += ",\n";
-          }
+        }
+        params += std::string("\n"+ind+"}\n");
 
         return params;
     }
