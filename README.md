@@ -45,8 +45,8 @@ Build dependencies:
 - ecbuild >= 3.13.1 --- ECMWF library of CMake macros (https://github.com/ecmwf/ecbuild)
 
 Runtime dependencies:
-  - eckit >= 1.33.2 (https://github.com/ecmwf/eckit)
-  - Atlas >= 0.46.0 (https://github.com/ecmwf/atlas)
+  - eckit >= 1.32.2 (https://github.com/ecmwf/eckit)
+  - Atlas >= 0.44.0 (https://github.com/ecmwf/atlas)
   - Plume >= 0.5.0 (https://github.com/ecmwf/plume)
 
 
