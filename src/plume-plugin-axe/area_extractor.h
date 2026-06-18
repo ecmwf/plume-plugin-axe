@@ -79,7 +79,7 @@ public:
 
     plume::Protocol negotiate() override {
         plume::Protocol protocol;
-        protocol.requireAtlasVersion("0.46.0");
+        protocol.requireAtlasVersion("0.44.0");
         protocol.requirePlumeVersion("0.5.0");
         protocol.require<int>("NSTEP");
 

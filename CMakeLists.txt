@@ -20,8 +20,8 @@ ecbuild_enable_fortran( REQUIRED MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/module )
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-ecbuild_find_package( NAME eckit  VERSION  1.33.2 REQUIRED )
-ecbuild_find_package( NAME atlas  VERSION  0.46.0 REQUIRED )
+ecbuild_find_package( NAME eckit  VERSION  1.32.2 REQUIRED )
+ecbuild_find_package( NAME atlas  VERSION  0.44.0 REQUIRED )
 ecbuild_find_package( NAME plume  VERSION  0.5.0  REQUIRED )
 
 # by default, we build the plugin for double precision only
