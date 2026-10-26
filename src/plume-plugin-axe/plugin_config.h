@@ -40,6 +40,9 @@ public:
     
     const std::string& outputStrategy() const {return outputStrategy_;}
 
+    // true if any requested area changes with the time step
+    bool hasTimeDependentAreas() const {return hasTimeDependentAreas_;}
+
     friend std::ostream& operator<<(std::ostream& ss, const PluginConfig& obj);
 
     std::string userName(int uid) const;
@@ -68,6 +71,9 @@ private:
 
     // user requests
     std::vector<UserRequest> requests_;
+
+    // any time-dependent area in the requests
+    bool hasTimeDependentAreas_{false};
 
     // user to user UID
     std::map<std::string,int> user_to_uid_;

@@ -40,6 +40,9 @@ private:
 
     void add_area(double north, double south, double east, double west);
 
+    // parse and add a circle extraction (fixed or time-dependent)
+    void add_circle(const eckit::Configuration& extraction);
+
 private:
 
     // User name

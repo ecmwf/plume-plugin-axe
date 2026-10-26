@@ -41,6 +41,10 @@ PluginConfig::PluginConfig(const eckit::Configuration& conf, const std::vector<s
         // fill-in use request
         requests_.push_back(UserRequest(conf_req));
 
+        for (const auto& area : requests_.back().areas()) {
+            hasTimeDependentAreas_ = hasTimeDependentAreas_ || area.isTimeDependent();
+        }
+
         // map user->uid (NB: only one request entry per user admitted)
         if (user_to_uid_.find(user) != user_to_uid_.end()) {
             eckit::Log::warning() << "User: " << user << " has multiple requests! => only using last one in list." << std::endl;

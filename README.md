@@ -76,6 +76,32 @@ make -j10
 make install
 ```
 
+# Configuration
+Extraction areas are listed per user request under `core-config.requests[].extractions`.
+Each entry is one of the following shapes (shapes can be mixed in the same request):
+
+```json
+{"north": 5, "south": 4, "east": 15, "west": 14}
+{"type": "circle", "lat": 15.0, "lon": 130.0, "radius": 300}
+{"type": "circle", "track": {
+    "interpolation": "linear",
+    "points": [
+        {"step": 0,  "lat": 15.0, "lon": 130.0, "radius": 300},
+        {"step": 12, "lat": 16.2, "lon": 128.5, "radius": 350}
+    ]
+}}
+```
+
+- **Bounding box** (default, `"type": "bbox"` can be omitted): grid points with `south <= lat <= north` and `west <= lon <= east`.
+- **Fixed circle**: grid points whose great-circle distance to (`lat`, `lon`) is `<= radius` [km], at every step.
+- **Time-dependent circle** (`track`): the circle centre and radius change with the model step (`NSTEP`).
+  - `points`: list of `{step, lat, lon, radius}` entries (any order, no duplicate steps).
+  - `interpolation` (optional, default `"linear"`):
+    - `"linear"`: at steps between two points, centre and radius are linearly interpolated;
+    - `"none"`: the circle is extracted only at steps listed in `points`.
+  - Before the first or after the last point, the circle selects no grid points.
+  - Extraction still happens only at steps where `NSTEP % runs_every == 0`. With `"none"`, track steps that are not multiples of `runs_every` are never extracted.
+
 # Testing
 To test the installation:
 

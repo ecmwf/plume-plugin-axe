@@ -57,6 +57,95 @@ EXPECT_EQUAL(areas[1].west(), 15);
 }
 
 
+CASE("test circle request") {
+
+    std::string request_str(R"YAML(
+        {
+            "user": "user11",
+            "tag": "tc",
+            "extractions": [
+                {"north": 50, "south": 4, "east": 75, "west": 14},
+                {"type": "circle", "lat": 15.0, "lon": 130.0, "radius": 300},
+                {"type": "circle", "track": {
+                    "points": [
+                        {"step": 12, "lat": 16.0, "lon": 128.0, "radius": 350},
+                        {"step": 0,  "lat": 15.0, "lon": 130.0, "radius": 300}
+                    ]
+                }},
+                {"type": "circle", "track": {
+                    "interpolation": "none",
+                    "points": [
+                        {"step": 6, "lat": 16.0, "lon": 128.0, "radius": 350}
+                    ]
+                }}
+            ]
+        })YAML");
+
+    eckit::YAMLConfiguration conf(request_str);
+    area_extractor::UserRequest request{conf};
+
+    using area_extractor::ExtractionArea;
+    const auto& areas = request.areas();
+    EXPECT_EQUAL(areas.size(), 4);
+
+    for (size_t i = 0; i < areas.size(); i++) {
+        EXPECT_EQUAL(areas[i].id(), static_cast<int>(i));
+    }
+
+    EXPECT(areas[0].shape() == ExtractionArea::Shape::BBox);
+    EXPECT(!areas[0].isTimeDependent());
+
+    EXPECT(areas[1].shape() == ExtractionArea::Shape::Circle);
+    EXPECT(!areas[1].isTimeDependent());
+
+    EXPECT(areas[2].shape() == ExtractionArea::Shape::Circle);
+    EXPECT(areas[2].isTimeDependent());
+    EXPECT(areas[2].interpolation() == ExtractionArea::Interpolation::Linear);  // default
+    EXPECT_EQUAL(areas[2].track().size(), 2);
+    EXPECT_EQUAL(areas[2].track().front().step, 0);  // sorted
+
+    EXPECT(areas[3].isTimeDependent());
+    EXPECT(areas[3].interpolation() == ExtractionArea::Interpolation::None);
+}
+
+
+CASE("test invalid circle requests") {
+
+    std::vector<std::string> invalid_extractions = {
+        // unknown type
+        R"({"type": "polygon"})",
+        // radius <= 0
+        R"({"type": "circle", "lat": 15.0, "lon": 130.0, "radius": 0})",
+        R"({"type": "circle", "lat": 15.0, "lon": 130.0, "radius": -10})",
+        // latitude out of range
+        R"({"type": "circle", "lat": 95.0, "lon": 130.0, "radius": 100})",
+        // missing keys of a fixed circle
+        R"({"type": "circle", "lat": 15.0, "lon": 130.0})",
+        // track combined with flat keys
+        R"({"type": "circle", "lat": 15.0, "track": {"points": [{"step": 0, "lat": 15.0, "lon": 130.0, "radius": 100}]}})",
+        // track not a dictionary
+        R"({"type": "circle", "track": [{"step": 0, "lat": 15.0, "lon": 130.0, "radius": 100}]})",
+        // track without points
+        R"({"type": "circle", "track": {"interpolation": "linear"}})",
+        // empty points
+        R"({"type": "circle", "track": {"points": []}})",
+        // unknown interpolation
+        R"({"type": "circle", "track": {"interpolation": "cubic", "points": [{"step": 0, "lat": 15.0, "lon": 130.0, "radius": 100}]}})",
+        // duplicate steps
+        R"({"type": "circle", "track": {"points": [{"step": 0, "lat": 15.0, "lon": 130.0, "radius": 100},
+                                                   {"step": 0, "lat": 16.0, "lon": 131.0, "radius": 100}]}})",
+        // invalid track point
+        R"({"type": "circle", "track": {"points": [{"step": 0, "lat": 15.0, "lon": 130.0, "radius": -1}]}})",
+    };
+
+    for (const auto& extraction : invalid_extractions) {
+        std::string request_str = R"({"user": "user11", "extractions": [)" + extraction + "]}";
+        eckit::YAMLConfiguration conf(request_str);
+        EXPECT_THROWS(area_extractor::UserRequest{conf});
+    }
+}
+
+
 CASE("test invalid request") {
 
     // invalid request

@@ -45,6 +45,20 @@
                             { "protocol": "webdav", "location": "https://<path>" },
                             { "protocol": "mars", "location": "class=od,...." }
                         ]
+                    },
+                    {
+                        "user": "user-4",
+                        "extractions": [
+                            {"type": "circle", "lat": 15.0, "lon": 130.0, "radius": 300},
+                            {"type": "circle", "track": {
+                                "interpolation": "linear",
+                                "points": [
+                                    {"step": 0,  "lat": 15.0, "lon": 130.0, "radius": 300},
+                                    {"step": 12, "lat": 16.2, "lon": 128.5, "radius": 350},
+                                    {"step": 24, "lat": 17.5, "lon": 126.8, "radius": 400}
+                                ]
+                            }}
+                        ]
                     }
                 ]
             }

@@ -34,8 +34,8 @@ public:
     DataReader(std::vector<atlas::Field> fields);
     ~DataReader();
 
-    // Extract data from configured requests
-    ExtractedData* extractData(const PluginConfig& config);
+    // Extract data from configured requests (areas evaluated at the given model step)
+    ExtractedData* extractData(const PluginConfig& config, int step);
 
     // update data
     void updateData(ExtractedData& data);

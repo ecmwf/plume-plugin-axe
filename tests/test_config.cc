@@ -60,6 +60,47 @@ CASE("test valid config") {
 
 }
 
+CASE("test time-dependent areas flag") {
+
+    std::string conf_static_str(R"YAML({
+        "writer": "CovJSON",
+        "requests": [
+            {
+                "user": "user11",
+                "extractions": [
+                    {"north": 50, "south": 4, "east": 75, "west": 14},
+                    {"type": "circle", "lat": 15.0, "lon": 130.0, "radius": 300}
+                ]
+            }
+        ]
+    })YAML");
+    eckit::YAMLConfiguration conf_static(conf_static_str);
+    PluginConfig config_static(conf_static, {"param1"});
+    EXPECT(!config_static.hasTimeDependentAreas());
+
+    std::string conf_track_str(R"YAML({
+        "writer": "CovJSON",
+        "requests": [
+            {
+                "user": "user11",
+                "extractions": [
+                    {"north": 50, "south": 4, "east": 75, "west": 14}
+                ]
+            },
+            {
+                "user": "user22",
+                "extractions": [
+                    {"type": "circle", "track": {"points": [{"step": 0, "lat": 15.0, "lon": 130.0, "radius": 300}]}}
+                ]
+            }
+        ]
+    })YAML");
+    eckit::YAMLConfiguration conf_track(conf_track_str);
+    PluginConfig config_track(conf_track, {"param1"});
+    EXPECT(config_track.hasTimeDependentAreas());
+}
+
+
 CASE("test invalid config") {
 
     // config with invalid request type

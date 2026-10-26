@@ -63,8 +63,9 @@ void AreaExtractorCore::setup() {
     // Create the reader
     reader_ = std::make_unique<DataReader>(fields);
 
-    // Extract data
-    data_.reset( reader_->extractData(*config_) );
+    // Extract data (areas evaluated at the current model step)
+    int timeStep = modelData().getParam<int>("NSTEP");
+    data_.reset( reader_->extractData(*config_, timeStep) );
 
     // Construct the data writer
     writer_.reset( DataWriterFactory::instance().build(config_->outputStrategy()) );
@@ -92,8 +93,12 @@ void AreaExtractorCore::run() {
         filename = std::string(outputDir) + "/" + filename;
     }
             
-    // Update data
-    reader_->updateData(*data_);
+    // Update data (re-select the points if any area changes with the time step)
+    if (config_->hasTimeDependentAreas()) {
+        data_.reset( reader_->extractData(*config_, timeStep) );
+    } else {
+        reader_->updateData(*data_);
+    }
 
     // Write data
     writer_->writeData(filename, *data_);

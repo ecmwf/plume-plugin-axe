@@ -47,6 +47,28 @@
                             {"north": -11, "south": -22, "east": 98, "west": 9},
                             {"north": -12, "south": -23, "east": 108, "west": 10}
                         ]
+                    },
+                    {
+                        "user": "user44",
+                        "tag": "tc_tracking",
+                        "extractions": [
+                            {"type": "circle", "lat": 15.0, "lon": 130.0, "radius": 800},
+                            {"type": "circle", "track": {
+                                "interpolation": "linear",
+                                "points": [
+                                    {"step": 0,  "lat": 15.0, "lon": 130.0, "radius": 800},
+                                    {"step": 12, "lat": 18.0, "lon": 125.0, "radius": 900},
+                                    {"step": 24, "lat": 22.0, "lon": 120.0, "radius": 1000}
+                                ]
+                            }},
+                            {"type": "circle", "track": {
+                                "interpolation": "none",
+                                "points": [
+                                    {"step": 0,  "lat": -15.0, "lon": 60.0, "radius": 800},
+                                    {"step": 12, "lat": -18.0, "lon": 55.0, "radius": 800}
+                                ]
+                            }}
+                        ]
                     }
                 ]
             }

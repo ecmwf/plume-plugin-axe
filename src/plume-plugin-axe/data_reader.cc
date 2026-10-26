@@ -35,7 +35,7 @@ DataReader::DataReader(std::vector<atlas::Field> fields) :
 DataReader::~DataReader() {}
 
 
-ExtractedData* DataReader::extractData(const PluginConfig& config) {
+ExtractedData* DataReader::extractData(const PluginConfig& config, int step) {
 
     // create_data
     ExtractedData* data = new ExtractedData{config};
@@ -78,7 +78,7 @@ ExtractedData* DataReader::extractData(const PluginConfig& config) {
                 for (const auto& area : request.areas()) {
 
                     int area_id = area.id();
-                    if (area.isPointInside(pointLat, pointLon)) {
+                    if (area.isPointInside(pointLat, pointLon, step)) {
 
                         // extract values at each vert level
                         for (int iLev=0; iLev<nlevs; iLev++){
