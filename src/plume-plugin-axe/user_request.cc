@@ -79,7 +79,7 @@ UserRequest::~UserRequest() {
 
 void UserRequest::add_area(double north, double south, double east, double west) {
     int area_idx = areas_.size();
-    areas_.push_back(ExtractionArea{area_idx, north, south, east, west});
+    areas_.push_back(std::make_shared<const ExtractionBox>(area_idx, north, south, east, west));
 }
 
 
@@ -102,11 +102,11 @@ void UserRequest::add_circle(const eckit::Configuration& extraction) {
 
         // interpolation (optional, default "linear")
         std::string interp = track.getString("interpolation", "linear");
-        ExtractionArea::Interpolation interpolation;
+        ExtractionCircle::Interpolation interpolation;
         if (interp == "linear") {
-            interpolation = ExtractionArea::Interpolation::Linear;
+            interpolation = ExtractionCircle::Interpolation::Linear;
         } else if (interp == "none") {
-            interpolation = ExtractionArea::Interpolation::None;
+            interpolation = ExtractionCircle::Interpolation::None;
         } else {
             throw eckit::UserError(prefix + "unknown track interpolation '" + interp + "' (expected 'none' or 'linear')", Here());
         }
@@ -140,7 +140,7 @@ void UserRequest::add_circle(const eckit::Configuration& extraction) {
             throw eckit::UserError(prefix + "'track.points' contains duplicate steps", Here());
         }
 
-        areas_.push_back(ExtractionArea{area_idx, std::move(trackPoints), interpolation});
+        areas_.push_back(std::make_shared<const ExtractionCircle>(area_idx, std::move(trackPoints), interpolation));
 
     } else {
 
@@ -150,7 +150,7 @@ void UserRequest::add_circle(const eckit::Configuration& extraction) {
                       extraction.getDouble("radius")};
         checkCircle(prefix, circle.lat, circle.radius);
 
-        areas_.push_back(ExtractionArea{area_idx, circle});
+        areas_.push_back(std::make_shared<const ExtractionCircle>(area_idx, circle));
     }
 }
 
@@ -161,7 +161,7 @@ std::ostream& operator<<(std::ostream& ss, const UserRequest& obj) {
 
     int cc = 0;
     for (const auto& area : obj.areas_) {
-        ss << area;
+        ss << *area;
         if (cc != obj.areas_.size()-1){
             ss << ",";
         }

@@ -45,10 +45,10 @@ void DataWriterCOVJSON::writeData(const std::string& filename, const ExtractedDa
 
             std::string user = request.user();
             std::string tag = request.tag();
-            std::vector<ExtractionArea> areas = request.areas();
+            const auto& areas = request.areas();
 
             std::vector<int> userAreaIdxs(areas.size());
-            std::transform(areas.begin(), areas.end(), userAreaIdxs.begin(), [](const ExtractionArea& elem){return elem.id();});
+            std::transform(areas.begin(), areas.end(), userAreaIdxs.begin(), [](const auto& elem){return elem->id();});
 
             std::vector<int> user_idxs = globalData->find({.user=user});
             ExtractedData userData = globalData->slice(user_idxs);

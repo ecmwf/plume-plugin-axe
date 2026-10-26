@@ -8,6 +8,8 @@
  * granted to it by virtue of its status as an intergovernmental organisation nor
  * does it submit to any jurisdiction.
  */
+#include <memory>
+
 #include "eckit/testing/Test.h"
 #include "eckit/config/YAMLConfiguration.h"
 
@@ -44,15 +46,20 @@ const auto& areas = request.areas();
 
 EXPECT_EQUAL(areas.size(), 2);
 
-EXPECT_EQUAL(areas[0].north(), 50);
-EXPECT_EQUAL(areas[0].south(), 4);
-EXPECT_EQUAL(areas[0].east(), 75);
-EXPECT_EQUAL(areas[0].west(), 14);
+auto box0 = std::dynamic_pointer_cast<const area_extractor::ExtractionBox>(areas[0]);
+auto box1 = std::dynamic_pointer_cast<const area_extractor::ExtractionBox>(areas[1]);
+EXPECT(box0);
+EXPECT(box1);
 
-EXPECT_EQUAL(areas[1].north(), 60);
-EXPECT_EQUAL(areas[1].south(), 5);
-EXPECT_EQUAL(areas[1].east(), 76);
-EXPECT_EQUAL(areas[1].west(), 15);
+EXPECT_EQUAL(box0->north(), 50);
+EXPECT_EQUAL(box0->south(), 4);
+EXPECT_EQUAL(box0->east(), 75);
+EXPECT_EQUAL(box0->west(), 14);
+
+EXPECT_EQUAL(box1->north(), 60);
+EXPECT_EQUAL(box1->south(), 5);
+EXPECT_EQUAL(box1->east(), 76);
+EXPECT_EQUAL(box1->west(), 15);
  
 }
 
@@ -84,28 +91,33 @@ CASE("test circle request") {
     eckit::YAMLConfiguration conf(request_str);
     area_extractor::UserRequest request{conf};
 
-    using area_extractor::ExtractionArea;
+    using area_extractor::ExtractionBox;
+    using area_extractor::ExtractionCircle;
     const auto& areas = request.areas();
     EXPECT_EQUAL(areas.size(), 4);
 
     for (size_t i = 0; i < areas.size(); i++) {
-        EXPECT_EQUAL(areas[i].id(), static_cast<int>(i));
+        EXPECT_EQUAL(areas[i]->id(), static_cast<int>(i));
     }
 
-    EXPECT(areas[0].shape() == ExtractionArea::Shape::BBox);
-    EXPECT(!areas[0].isTimeDependent());
+    EXPECT(std::dynamic_pointer_cast<const ExtractionBox>(areas[0]));
+    EXPECT(!areas[0]->isTimeDependent());
 
-    EXPECT(areas[1].shape() == ExtractionArea::Shape::Circle);
-    EXPECT(!areas[1].isTimeDependent());
+    auto fixed = std::dynamic_pointer_cast<const ExtractionCircle>(areas[1]);
+    EXPECT(fixed);
+    EXPECT(!fixed->isTimeDependent());
 
-    EXPECT(areas[2].shape() == ExtractionArea::Shape::Circle);
-    EXPECT(areas[2].isTimeDependent());
-    EXPECT(areas[2].interpolation() == ExtractionArea::Interpolation::Linear);  // default
-    EXPECT_EQUAL(areas[2].track().size(), 2);
-    EXPECT_EQUAL(areas[2].track().front().step, 0);  // sorted
+    auto track = std::dynamic_pointer_cast<const ExtractionCircle>(areas[2]);
+    EXPECT(track);
+    EXPECT(track->isTimeDependent());
+    EXPECT(track->interpolation() == ExtractionCircle::Interpolation::Linear);  // default
+    EXPECT_EQUAL(track->track().size(), 2);
+    EXPECT_EQUAL(track->track().front().step, 0);  // sorted
 
-    EXPECT(areas[3].isTimeDependent());
-    EXPECT(areas[3].interpolation() == ExtractionArea::Interpolation::None);
+    auto track_none = std::dynamic_pointer_cast<const ExtractionCircle>(areas[3]);
+    EXPECT(track_none);
+    EXPECT(track_none->isTimeDependent());
+    EXPECT(track_none->interpolation() == ExtractionCircle::Interpolation::None);
 }
 
 

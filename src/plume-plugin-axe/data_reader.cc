@@ -77,8 +77,8 @@ ExtractedData* DataReader::extractData(const PluginConfig& config, int step) {
                 int user_uid = config.user_uid(request.user());
                 for (const auto& area : request.areas()) {
 
-                    int area_id = area.id();
-                    if (area.isPointInside(pointLat, pointLon, step)) {
+                    int area_id = area->id();
+                    if (area->isPointInside(pointLat, pointLon, step)) {
 
                         // extract values at each vert level
                         for (int iLev=0; iLev<nlevs; iLev++){

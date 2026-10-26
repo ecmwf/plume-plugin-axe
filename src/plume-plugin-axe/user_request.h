@@ -12,6 +12,7 @@
 
 #include <vector>
 #include <string>
+#include <memory>
 
 #include "eckit/log/Log.h"
 #include "eckit/config/LocalConfiguration.h"
@@ -32,7 +33,7 @@ public:
     
     const std::string& tag() const { return tag_; }
 
-    const std::vector<ExtractionArea>& areas() const {return areas_;}
+    const std::vector<std::shared_ptr<const ExtractionArea>>& areas() const {return areas_;}
 
     friend std::ostream& operator<<(std::ostream& ss, const UserRequest& obj);
 
@@ -51,8 +52,8 @@ private:
     // Tag
     std::string tag_;
 
-    // Requested extraction areas
-    std::vector<ExtractionArea> areas_;
+    // Requested extraction areas (immutable, shared between copies of the request)
+    std::vector<std::shared_ptr<const ExtractionArea>> areas_;
 };
 
 } // namespace area_extractor

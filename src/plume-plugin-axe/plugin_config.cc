@@ -42,7 +42,7 @@ PluginConfig::PluginConfig(const eckit::Configuration& conf, const std::vector<s
         requests_.push_back(UserRequest(conf_req));
 
         for (const auto& area : requests_.back().areas()) {
-            hasTimeDependentAreas_ = hasTimeDependentAreas_ || area.isTimeDependent();
+            hasTimeDependentAreas_ = hasTimeDependentAreas_ || area->isTimeDependent();
         }
 
         // map user->uid (NB: only one request entry per user admitted)

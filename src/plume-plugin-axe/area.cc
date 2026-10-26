@@ -55,20 +55,62 @@ double greatCircleDistanceKm(double lat1, double lon1, double lat2, double lon2)
 }
 
 
-ExtractionArea::ExtractionArea(int area_id,  double north, double south, double east, double west) :
-    area_id_{area_id}, shape_{Shape::BBox}, north_{north}, south_{south}, east_{east}, west_{west} {
+// ---------------------- ExtractionArea ----------------------
+ExtractionArea::ExtractionArea(int area_id) : area_id_{area_id} {
 }
 
 
-ExtractionArea::ExtractionArea(int area_id, const Circle& circle) :
-    area_id_{area_id}, shape_{Shape::Circle},
+ExtractionArea::~ExtractionArea(){
+}
+
+
+bool ExtractionArea::isPointInside(double lat, double lon) const {
+    ASSERT(!isTimeDependent());
+    return isPointInside(lat, lon, 0);
+}
+
+
+std::ostream& operator<<(std::ostream& ss, const ExtractionArea& obj) {
+    ss << "{id:" << obj.area_id_ << ",";
+    obj.print(ss);
+    ss << "}";
+    return ss;
+}
+
+
+// ---------------------- ExtractionBox ----------------------
+ExtractionBox::ExtractionBox(int area_id,  double north, double south, double east, double west) :
+    ExtractionArea(area_id), north_{north}, south_{south}, east_{east}, west_{west} {
+}
+
+
+ExtractionBox::~ExtractionBox(){
+}
+
+
+bool ExtractionBox::isPointInside(double lat, double lon, int /*step*/) const {
+    return ((lat <= north_) && (lat >= south_) && (lon <= east_) && (lon >= west_));
+}
+
+
+void ExtractionBox::print(std::ostream& ss) const {
+    ss << "bbox:(north:" << north_ << ",";
+    ss << "south:" << south_ << ",";
+    ss << "east:" << east_ << ",";
+    ss << "west:" << west_ << ")";
+}
+
+
+// ---------------------- ExtractionCircle ----------------------
+ExtractionCircle::ExtractionCircle(int area_id, const Circle& circle) :
+    ExtractionArea(area_id),
     track_{TrackPoint{0, circle.lat, circle.lon, circle.radius}},
     timeDependent_{false} {
 }
 
 
-ExtractionArea::ExtractionArea(int area_id, std::vector<TrackPoint> track, Interpolation interpolation) :
-    area_id_{area_id}, shape_{Shape::Circle}, track_{std::move(track)},
+ExtractionCircle::ExtractionCircle(int area_id, std::vector<TrackPoint> track, Interpolation interpolation) :
+    ExtractionArea(area_id), track_{std::move(track)},
     interpolation_{interpolation}, timeDependent_{true} {
 
     ASSERT(!track_.empty());
@@ -77,15 +119,11 @@ ExtractionArea::ExtractionArea(int area_id, std::vector<TrackPoint> track, Inter
 }
 
 
-ExtractionArea::~ExtractionArea(){
+ExtractionCircle::~ExtractionCircle(){
 }
 
 
-std::optional<Circle> ExtractionArea::circleAt(int step) const {
-
-    if (shape_ != Shape::Circle) {
-        return std::nullopt;
-    }
+std::optional<Circle> ExtractionCircle::circleAt(int step) const {
 
     if (!timeDependent_) {
         const auto& p = track_.front();
@@ -122,11 +160,7 @@ std::optional<Circle> ExtractionArea::circleAt(int step) const {
 }
 
 
-bool ExtractionArea::isPointInside(double lat, double lon, int step) const {
-
-    if (shape_ == Shape::BBox) {
-        return ((lat <= north_) && (lat >= south_) && (lon <= east_) && (lon >= west_));
-    }
+bool ExtractionCircle::isPointInside(double lat, double lon, int step) const {
 
     std::optional<Circle> circle = circleAt(step);
     if (!circle) {
@@ -142,31 +176,17 @@ bool ExtractionArea::isPointInside(double lat, double lon, int step) const {
 }
 
 
-bool ExtractionArea::isPointInside(double lat, double lon) const {
-    ASSERT(!timeDependent_);
-    return isPointInside(lat, lon, 0);
-}
-
-
-std::ostream& operator<<(std::ostream& ss, const ExtractionArea& obj) {
-    ss << "{id:" << obj.area_id_ << ",";
-    if (obj.shape_ == ExtractionArea::Shape::BBox) {
-        ss << "bbox:(north:" << obj.north_ << ",";
-        ss << "south:" << obj.south_ << ",";
-        ss << "east:" << obj.east_ << ",";
-        ss << "west:" << obj.west_ << ")";
-    } else if (!obj.timeDependent_) {
-        const auto& p = obj.track_.front();
+void ExtractionCircle::print(std::ostream& ss) const {
+    if (!timeDependent_) {
+        const auto& p = track_.front();
         ss << "circle:(lat:" << p.lat << ",";
         ss << "lon:" << p.lon << ",";
         ss << "radius:" << p.radius << ")";
     } else {
-        ss << "track:(points:" << obj.track_.size() << ",";
-        ss << "steps:" << obj.track_.front().step << "-" << obj.track_.back().step << ",";
-        ss << "interpolation:" << (obj.interpolation_ == ExtractionArea::Interpolation::Linear ? "linear" : "none") << ")";
+        ss << "track:(points:" << track_.size() << ",";
+        ss << "steps:" << track_.front().step << "-" << track_.back().step << ",";
+        ss << "interpolation:" << (interpolation_ == Interpolation::Linear ? "linear" : "none") << ")";
     }
-    ss << "}";
-    return ss;
 }
 
 

@@ -9,6 +9,7 @@
  * does it submit to any jurisdiction.
  */
 #include <cmath>
+#include <memory>
 #include <vector>
 
 #include "eckit/testing/Test.h"
@@ -25,19 +26,40 @@ namespace test {
 CASE("test area") {
 
     // test extraction area
-    area_extractor::ExtractionArea area(1, 20.0, 10.0, 40.0, 30.0);
+    area_extractor::ExtractionBox area(1, 20.0, 10.0, 40.0, 30.0);
 
     EXPECT_EQUAL(area.id(), 1);
     EXPECT_EQUAL(area.north(), 20.0);
     EXPECT_EQUAL(area.south(), 10.0);
     EXPECT_EQUAL(area.east(), 40.0);
     EXPECT_EQUAL(area.west(), 30.0);
+    EXPECT(!area.isTimeDependent());
 
     EXPECT(area.isPointInside(15.0, 35.0));
     EXPECT(!area.isPointInside(5.0, 35.0));
     EXPECT(!area.isPointInside(15.0, 45.0));
     EXPECT(!area.isPointInside(25.0, 35.0));
     EXPECT(!area.isPointInside(15.0, 25.0));    
+}
+
+
+CASE("test polymorphic access") {
+
+    std::vector<std::shared_ptr<const area_extractor::ExtractionArea>> areas{
+        std::make_shared<const area_extractor::ExtractionBox>(0, 20.0, 10.0, 40.0, 30.0),
+        std::make_shared<const area_extractor::ExtractionCircle>(1, area_extractor::Circle{10.0, 20.0, 200.0}),
+        std::make_shared<const area_extractor::ExtractionCircle>(2, std::vector<area_extractor::TrackPoint>{{0, 10.0, 20.0, 200.0}},
+                                                                 area_extractor::ExtractionCircle::Interpolation::Linear)
+    };
+
+    EXPECT(areas[0]->isPointInside(15.0, 35.0, 0));
+    EXPECT(areas[1]->isPointInside(10.0, 20.0, 0));
+    EXPECT(areas[2]->isPointInside(10.0, 20.0, 0));
+    EXPECT(!areas[2]->isPointInside(10.0, 20.0, 1));
+
+    EXPECT(!areas[0]->isTimeDependent());
+    EXPECT(!areas[1]->isTimeDependent());
+    EXPECT(areas[2]->isTimeDependent());
 }
 
 
@@ -53,10 +75,9 @@ CASE("test great-circle distance") {
 
 CASE("test fixed circle") {
 
-    area_extractor::ExtractionArea area(2, area_extractor::Circle{10.0, 20.0, 200.0});
+    area_extractor::ExtractionCircle area(2, area_extractor::Circle{10.0, 20.0, 200.0});
 
     EXPECT_EQUAL(area.id(), 2);
-    EXPECT(area.shape() == area_extractor::ExtractionArea::Shape::Circle);
     EXPECT(!area.isTimeDependent());
 
     // ~111 km north of the centre: inside; ~222 km: outside
@@ -72,13 +93,13 @@ CASE("test fixed circle") {
 CASE("test circle across the dateline and near the pole") {
 
     // centre at lon 179.5: point at lon -179.5 is ~110 km away
-    area_extractor::ExtractionArea dateline(0, area_extractor::Circle{0.0, 179.5, 150.0});
+    area_extractor::ExtractionCircle dateline(0, area_extractor::Circle{0.0, 179.5, 150.0});
     EXPECT(dateline.isPointInside(0.0, -179.5));
     EXPECT(dateline.isPointInside(0.0, 180.5));
     EXPECT(!dateline.isPointInside(0.0, 175.0));
 
     // centre at lat 89.5: point at lat 89.5 on the opposite meridian is ~111 km away
-    area_extractor::ExtractionArea polar(1, area_extractor::Circle{89.5, 0.0, 150.0});
+    area_extractor::ExtractionCircle polar(1, area_extractor::Circle{89.5, 0.0, 150.0});
     EXPECT(polar.isPointInside(89.5, 180.0));
     EXPECT(polar.isPointInside(90.0, 0.0));
     EXPECT(!polar.isPointInside(87.0, 180.0));
@@ -88,12 +109,12 @@ CASE("test circle across the dateline and near the pole") {
 CASE("test track circle - linear interpolation") {
 
     using area_extractor::TrackPoint;
-    using area_extractor::ExtractionArea;
+    using area_extractor::ExtractionCircle;
 
     // points given unsorted on purpose
     std::vector<TrackPoint> track{{10, 20.0, 40.0, 300.0},
                                   {0, 10.0, 30.0, 100.0}};
-    ExtractionArea area(3, track, ExtractionArea::Interpolation::Linear);
+    ExtractionCircle area(3, track, ExtractionCircle::Interpolation::Linear);
 
     EXPECT(area.isTimeDependent());
 
@@ -126,11 +147,11 @@ CASE("test track circle - linear interpolation") {
 CASE("test track circle - interpolation across the dateline") {
 
     using area_extractor::TrackPoint;
-    using area_extractor::ExtractionArea;
+    using area_extractor::ExtractionCircle;
 
     std::vector<TrackPoint> track{{0, 0.0, 179.0, 100.0},
                                   {2, 0.0, -179.0, 100.0}};
-    ExtractionArea area(0, track, ExtractionArea::Interpolation::Linear);
+    ExtractionCircle area(0, track, ExtractionCircle::Interpolation::Linear);
 
     // shortest arc goes through 180, not through 0
     auto c1 = area.circleAt(1);
@@ -142,11 +163,11 @@ CASE("test track circle - interpolation across the dateline") {
 CASE("test track circle - no interpolation") {
 
     using area_extractor::TrackPoint;
-    using area_extractor::ExtractionArea;
+    using area_extractor::ExtractionCircle;
 
     std::vector<TrackPoint> track{{0, 10.0, 30.0, 100.0},
                                   {10, 20.0, 40.0, 300.0}};
-    ExtractionArea area(0, track, ExtractionArea::Interpolation::None);
+    ExtractionCircle area(0, track, ExtractionCircle::Interpolation::None);
 
     EXPECT(area.circleAt(0).has_value());
     EXPECT(area.circleAt(10).has_value());
@@ -154,7 +175,7 @@ CASE("test track circle - no interpolation") {
     EXPECT(!area.isPointInside(15.0, 35.0, 5));
 
     // single-point track: only at that step
-    ExtractionArea single(1, {{4, 10.0, 30.0, 100.0}}, ExtractionArea::Interpolation::Linear);
+    ExtractionCircle single(1, {{4, 10.0, 30.0, 100.0}}, ExtractionCircle::Interpolation::Linear);
     EXPECT(single.circleAt(4).has_value());
     EXPECT(!single.circleAt(3).has_value());
     EXPECT(!single.circleAt(5).has_value());
