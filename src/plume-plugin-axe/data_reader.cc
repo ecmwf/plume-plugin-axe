@@ -9,6 +9,7 @@
  * does it submit to any jurisdiction.
  */
 
+#include <algorithm>
 #include <map>
 #include <iostream>
 
@@ -23,7 +24,22 @@
 
 namespace area_extractor {
 
-DataReader::DataReader(std::vector<plume::data::FieldView> fields) : 
+namespace {
+
+// interpolated params are named "<param>;<levtype>;<level>" (e.g. "u;hl;70")
+bool isInterpolatedField(const std::string& name) {
+    return name.find(';') != std::string::npos;
+}
+
+// u, v and z are the sources of interpolation for the interpolated params
+bool isInterpolationSource(const std::string& name) {
+    return name == "u" || name == "v" || name == "z";
+}
+
+} // namespace
+
+
+DataReader::DataReader(std::vector<plume::data::FieldView> fields) :
     fields_{fields} {
 
     for (const auto& field : fields_){
@@ -54,13 +70,26 @@ ExtractedData* DataReader::extractData(const PluginConfig& config, int step) {
     double pointLat;
     double pointLon;
 
-    int nlevs = fields_[0].levels();
+    // if interpolated params are requested, u, v and z are only there as sources of
+    // interpolation: they are skipped and all the other params must have one level.
+    // Otherwise all params must have the same number of levels
+    bool hasInterpolated = std::any_of(fields_.begin(), fields_.end(),
+                                       [](const auto& field) { return isInterpolatedField(field.name()); });
 
-    // check that all fields have the same number of levels
+    int nlevs = hasInterpolated ? 1 : fields_[0].levels();
+
     for (const auto& field: fields_) {
+        if (hasInterpolated && isInterpolationSource(field.name())) {
+            continue;
+        }
         if (field.levels() != nlevs) {
             eckit::Log::error() << "DataReader::extractData: fields have different number of levels" << std::endl;
-            eckit::Log::error() << "Field[0] has " << nlevs << " levels" << ", while " << field.name() << " has " << field.levels() << " levels!" << std::endl;
+            if (hasInterpolated) {
+                eckit::Log::error() << "interpolated params are requested, so all params (except interpolation sources u, v, z) must have 1 level"
+                                    << ", while " << field.name() << " has " << field.levels() << " levels!" << std::endl;
+            } else {
+                eckit::Log::error() << fields_[0].name() << " has " << nlevs << " levels" << ", while " << field.name() << " has " << field.levels() << " levels!" << std::endl;
+            }
             throw eckit::UserError("DataReader::extractData num levels error!");
         }
     }

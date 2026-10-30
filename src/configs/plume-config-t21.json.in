@@ -2,9 +2,17 @@
     "plugins": [
         {
             "name": "AreaExtractor",
-            "lib": "plume_plugin_axe.DP",
+            "lib": "plume_plugin_axe.SP",
             "parameters": [
                 [
+                    {
+                        "name": "z",
+                        "type": "ATLAS_FIELD"
+                    },
+                    {
+                        "name": "tcw",
+                        "type": "ATLAS_FIELD"
+                    },
                     {
                         "name": "u",
                         "type": "ATLAS_FIELD",
@@ -37,15 +45,6 @@
                             {"north": 65, "south": 14, "east": 88, "west": 7},
                             {"north": 66, "south": 15, "east": 89, "west": 8},
                             {"north": 67, "south": 16, "east": 90, "west": 9}
-                        ]
-                    },                
-                    {
-                        "user": "user33",
-                        "tag": "extraction_area_3",
-                        "extractions": [
-                            {"north": -10, "south": -21, "east": 88, "west": 8},
-                            {"north": -11, "south": -22, "east": 98, "west": 9},
-                            {"north": -12, "south": -23, "east": 108, "west": 10}
                         ]
                     },
                     {
