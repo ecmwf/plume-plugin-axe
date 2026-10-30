@@ -55,7 +55,7 @@ void AreaExtractorCore::setup() {
 
     // prepare the field reader
     std::vector<std::string> fieldNames = config_->parameters();
-    std::vector<atlas::Field> fields;
+    std::vector<plume::data::FieldView> fields;
     for(auto& name: fieldNames){
         fields.push_back(modelData().getParam<atlas::Field>(name));
     }

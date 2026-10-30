@@ -15,6 +15,8 @@
 
 #include "atlas/field/Field.h"
 
+#include "plume/data/FieldAccess.h"
+
 #include "plugin_config.h"
 #include "extracted_data.h"
 
@@ -27,11 +29,11 @@ namespace area_extractor {
  */
 class DataReader {
 
-    using FieldMap = std::map<std::string, atlas::Field>;
+    using FieldMap = std::map<std::string, plume::data::FieldView>;
 
 public:
 
-    DataReader(std::vector<atlas::Field> fields);
+    DataReader(std::vector<plume::data::FieldView> fields);
     ~DataReader();
 
     // Extract data from configured requests (areas evaluated at the given model step)
@@ -43,7 +45,7 @@ public:
 private:
 
     // pointers to fields
-    std::vector<atlas::Field> fields_;
+    std::vector<plume::data::FieldView> fields_;
     atlas::Field lonlats_;
     atlas::Field ghost_;
     FieldMap fieldViewMap_;

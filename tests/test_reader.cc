@@ -25,6 +25,8 @@
 #include "atlas/mesh/Mesh.h"
 #include "atlas/meshgenerator.h"
 
+#include "plume/data/FieldAccess.h"
+
 
 #include "data_reader.h"
 #include "extracted_data.h"
@@ -70,7 +72,7 @@ CASE("test reader") {
 
     // atlas fields
     std::vector<std::string> params = {"field1", "field2"};
-    std::vector<atlas::Field> fields;
+    std::vector<plume::data::FieldView> fields;
 
     // create a grid
     atlas::Grid grid("O8");
@@ -83,7 +85,7 @@ CASE("test reader") {
     // create fields
     for (const auto& param: params) {
         atlas::Field field = fs.createField<FIELD_TYPE_REAL>(atlas::option::name(param));
-        fields.push_back(field);
+        fields.push_back(plume::data::FieldView(field));
     }
 
     // data reader
@@ -149,7 +151,7 @@ CASE("test reader - moving circle") {
     eckit::YAMLConfiguration conf(conf_str);
 
     std::vector<std::string> params = {"field1"};
-    std::vector<atlas::Field> fields;
+    std::vector<plume::data::FieldView> fields;
 
     atlas::Grid grid("O8");
     atlas::util::Config grid_config;
@@ -158,7 +160,7 @@ CASE("test reader - moving circle") {
     grid_config.set("periodic_points", true);
     atlas::functionspace::StructuredColumns fs(grid, atlas::grid::Partitioner("equal_regions"), grid_config);
     for (const auto& param: params) {
-        fields.push_back(fs.createField<FIELD_TYPE_REAL>(atlas::option::name(param)));
+        fields.push_back(plume::data::FieldView(fs.createField<FIELD_TYPE_REAL>(atlas::option::name(param))));
     }
 
     DataReader reader(fields);

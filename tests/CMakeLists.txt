@@ -39,6 +39,7 @@ foreach(prec_def ${PLUGINS_DEFINITIONS})
                         ${PLUGIN_AXE_LIB_NAME}
                         eckit
                         atlas
+                        plume_plugin
     )
 
     ecbuild_add_test( TARGET plugin_axe_test_config_${PLUGIN_AXE_NAME_EXT}

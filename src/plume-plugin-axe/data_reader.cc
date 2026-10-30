@@ -23,7 +23,7 @@
 
 namespace area_extractor {
 
-DataReader::DataReader(std::vector<atlas::Field> fields) : 
+DataReader::DataReader(std::vector<plume::data::FieldView> fields) : 
     fields_{fields} {
 
     for (const auto& field : fields_){
@@ -113,7 +113,7 @@ void DataReader::updateData(ExtractedData& data) {
 
         for (size_t iparam=0; iparam<fields_.size(); iparam++){
             // atlas::Field field = fieldViewMap_[paramName];
-            atlas::Field field = fields_[iparam];
+            const auto& field = fields_[iparam];
             auto arr = atlas::array::make_view<const FIELD_TYPE_REAL,2>(field);
 
             values[iparam] = arr(ptIDX, iLev); 
