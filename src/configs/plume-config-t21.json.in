@@ -10,10 +10,6 @@
                         "type": "ATLAS_FIELD"
                     },
                     {
-                        "name": "tcw",
-                        "type": "ATLAS_FIELD"
-                    },
-                    {
                         "name": "u",
                         "type": "ATLAS_FIELD",
                         "height": 5000
@@ -26,7 +22,19 @@
                     {
                         "name": "TSTEP",
                         "type": "DOUBLE"
-                    }                    
+                    },
+                    {
+                        "name": "tcw",
+                        "type": "ATLAS_FIELD"
+                    },
+                    {
+                        "name": "lnsp",
+                        "type": "ATLAS_FIELD"
+                    },
+                    {
+                        "name": "sst",
+                        "type": "ATLAS_FIELD"
+                    }
                 ]
             ],
             "core-config": {
