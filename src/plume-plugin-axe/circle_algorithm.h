@@ -88,6 +88,19 @@ Circle advect(const Circle& circle, double u, double v, double dt);
 
 
 /**
+ * @brief Radius [km] changing linearly from start to end over intervalHours, then constant at end
+ *
+ */
+struct RadiusSchedule {
+    double start;
+    double end;
+    double intervalHours;  // ignored when start == end
+
+    double at(double elapsedHours) const;
+};
+
+
+/**
  * @brief Moves the circle centre with the mean wind (u, v at a given height) inside the circle
  *
  */
@@ -103,6 +116,9 @@ public:
 
     // current circle (as of the last update)
     const Circle& circle() const { return circle_; }
+
+    // radius schedule (constant radius: start == end)
+    const RadiusSchedule& radiusSchedule() const { return radius_; }
 
     // the current circle, at any step
     std::optional<Circle> circleAt(int /*step*/) const override { return circle_; }
@@ -121,10 +137,15 @@ private:
 
     Circle circle_;
 
+    RadiusSchedule radius_;
+
     double windHeight_;
 
     std::string uName_;
     std::string vName_;
+
+    // step of the first update (origin of the radius schedule)
+    std::optional<int> firstStep_;
 
     // step of the last update (unset before the first update)
     std::optional<int> lastStep_;

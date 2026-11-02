@@ -139,13 +139,15 @@ CASE("test algorithm circle request") {
         "user": "user11",
         "extractions": [
             {"type": "circle", "algorithm": {"name": "wind-advected", "lat": 15.0, "lon": 130.0, "radius": 300}},
-            {"type": "circle", "algorithm": {"name": "wind-advected", "lat": 15.0, "lon": 130.0, "radius": 300, "wind_height": 850.5}}
+            {"type": "circle", "algorithm": {"name": "wind-advected", "lat": 15.0, "lon": 130.0, "radius": 300, "wind_height": 850.5}},
+            {"type": "circle", "algorithm": {"name": "wind-advected", "lat": 15.0, "lon": 130.0,
+                                             "radius": {"start": 100, "end": 300.5, "time-interval": 24}}}
         ]
     })YAML");
 
     eckit::YAMLConfiguration conf(request_str);
     area_extractor::UserRequest request(conf);
-    EXPECT_EQUAL(request.areas().size(), 2);
+    EXPECT_EQUAL(request.areas().size(), 3);
 
     auto algo = std::dynamic_pointer_cast<const AlgorithmCircle>(request.areas()[0]);
     EXPECT(algo);
@@ -157,6 +159,10 @@ CASE("test algorithm circle request") {
     EXPECT_EQUAL(wind->circle().lon, 130.0);
     EXPECT_EQUAL(wind->circle().radius, 300.0);
 
+    // constant radius
+    EXPECT_EQUAL(wind->radiusSchedule().start, 300.0);
+    EXPECT_EQUAL(wind->radiusSchedule().end, 300.0);
+
     // default wind height (5000 m)
     std::vector<std::string> fields = algo->requiredFields();
     EXPECT_EQUAL(fields.size(), 2);
@@ -167,6 +173,16 @@ CASE("test algorithm circle request") {
     std::vector<std::string> fields_custom = request.areas()[1]->requiredFields();
     EXPECT_EQUAL(fields_custom[0], "u;hl;850.5");
     EXPECT_EQUAL(fields_custom[1], "v;hl;850.5");
+
+    // time-dependent radius: starts at "start"
+    auto algo_growing = std::dynamic_pointer_cast<const AlgorithmCircle>(request.areas()[2]);
+    EXPECT(algo_growing);
+    auto growing = dynamic_cast<const area_extractor::WindAdvectionAlgorithm*>(&algo_growing->algorithm());
+    EXPECT(growing);
+    EXPECT_EQUAL(growing->circle().radius, 100.0);
+    EXPECT_EQUAL(growing->radiusSchedule().start, 100.0);
+    EXPECT_EQUAL(growing->radiusSchedule().end, 300.5);
+    EXPECT_EQUAL(growing->radiusSchedule().intervalHours, 24.0);
 }
 
 
@@ -214,6 +230,15 @@ CASE("test invalid circle requests") {
         R"({"type": "circle", "algorithm": {"name": "wind-advected", "lat": 95.0, "lon": 130.0, "radius": 300}})",
         R"({"type": "circle", "algorithm": {"name": "wind-advected", "lat": 15.0, "lon": 130.0, "radius": 0}})",
         R"({"type": "circle", "algorithm": {"name": "wind-advected", "lat": 15.0, "lon": 130.0, "radius": 300, "wind_height": 0}})",
+        // wind-advected: invalid radius schedule
+        R"({"type": "circle", "algorithm": {"name": "wind-advected", "lat": 15.0, "lon": 130.0, "radius": {"start": 100, "end": 300}}})",
+        R"({"type": "circle", "algorithm": {"name": "wind-advected", "lat": 15.0, "lon": 130.0, "radius": {"end": 300, "time-interval": 24}}})",
+        R"({"type": "circle", "algorithm": {"name": "wind-advected", "lat": 15.0, "lon": 130.0, "radius": {"start": 0, "end": 300, "time-interval": 24}}})",
+        R"({"type": "circle", "algorithm": {"name": "wind-advected", "lat": 15.0, "lon": 130.0, "radius": {"start": 100, "end": -1, "time-interval": 24}}})",
+        R"({"type": "circle", "algorithm": {"name": "wind-advected", "lat": 15.0, "lon": 130.0, "radius": {"start": 100, "end": 300, "time-interval": 0}}})",
+        R"({"type": "circle", "algorithm": {"name": "wind-advected", "lat": 15.0, "lon": 130.0, "radius": {"start": 100, "end": 300, "time-interval": "24"}}})",
+        R"({"type": "circle", "algorithm": {"name": "wind-advected", "lat": 15.0, "lon": 130.0, "radius": [100, 300]}})",
+        R"({"type": "circle", "algorithm": {"name": "wind-advected", "lat": 15.0, "lon": 130.0, "radius": "300"}})",
     };
 
     for (const auto& extraction : invalid_extractions) {

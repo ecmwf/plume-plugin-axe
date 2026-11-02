@@ -108,7 +108,9 @@ Each entry is one of the following shapes (shapes can be mixed in the same reque
         - `"none"`: the circle is extracted only at steps listed in `points`.
       - Before the first or after the last point, the circle selects no grid points.
       - Extraction still happens only at steps where `NSTEP % runs_every == 0`. With `"none"`, track steps that are not multiples of `runs_every` are never extracted.
-    - `"wind-advected"`: the circle starts at (`lat`, `lon`) with a constant `radius`.
+    - `"wind-advected"`: the circle starts at (`lat`, `lon`) with a `radius` that is either:
+      - a number [km]: a constant radius;
+      - a dictionary `{"start": 100, "end": 300, "time-interval": 24}`: the radius grows linearly from `start` to `end` [km] over `time-interval` [h], measured from the plugin's first executed step, and then stays at `end`. All three values must be numbers > 0 (`end < start` shrinks the circle).
       - At each executed step, the centre is moved by the mean wind inside the circle (`u` and `v` interpolated at `wind_height` metres, default 5000) times the time elapsed since the previous executed step (`TSTEP` × elapsed steps). Points are then extracted inside the moved circle.
       - The plugin `"parameters"` must request the wind fields and `TSTEP`, e.g.:
         ```json

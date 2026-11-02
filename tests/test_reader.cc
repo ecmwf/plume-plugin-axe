@@ -216,7 +216,9 @@ CASE("test reader - wind-advected circle") {
                 "tag": "tc",
                 "extractions": [
                     {"type": "circle", "algorithm": {"name": "wind-advected", "lat": 0.0, "lon": 0.0, "radius": 1500}},
-                    {"type": "circle", "algorithm": {"name": "wind-advected", "lat": 0.0, "lon": 0.0, "radius": 1}}
+                    {"type": "circle", "algorithm": {"name": "wind-advected", "lat": 0.0, "lon": 0.0, "radius": 1},
+                    {"type": "circle", "algorithm": {"name": "wind-advected", "lat": 0.0, "lon": 0.0,
+                                                     "radius": {"start": 1000, "end": 2000, "time-interval": 24}}}
                 ]
             }
         ]
@@ -270,6 +272,7 @@ CASE("test reader - wind-advected circle") {
     // first update: the configured circle is kept
     reader.updateAreas(plugin_config, 0, tstep);
     EXPECT_EQUAL(algorithmOf(0).circle().lon, 0.0);
+    EXPECT_EQUAL(algorithmOf(2).circle().radius, 1000.0);
     std::unique_ptr<ExtractedData> data0(reader.extractData(plugin_config, 0));
 
     // same step again: no move
@@ -295,6 +298,19 @@ CASE("test reader - wind-advected circle") {
     // a circle without grid points is not moved
     EXPECT(lons_of_area(*data10, 1).empty());
     EXPECT_EQUAL(algorithmOf(1).circle().lon, 0.0);
+
+    // time-dependent radius: 1000 km at the first step, linear over 24 h (TSTEP = 1 h), then 2000 km
+    EXPECT(std::abs(algorithmOf(2).circle().radius - (1000.0 + 1000.0 * 10.0 / 24.0)) < 1e-9);
+    EXPECT(std::abs(algorithmOf(2).circle().lon - expectedLon) < 1e-6);
+    size_t nPoints0 = lons_of_area(*data0, 2).size();
+    size_t nPoints10 = lons_of_area(*data10, 2).size();
+    EXPECT(nPoints0 > 0);
+    EXPECT(nPoints10 >= nPoints0);
+
+    reader.updateAreas(plugin_config, 30, tstep);
+    EXPECT_EQUAL(algorithmOf(2).circle().radius, 2000.0);
+    std::unique_ptr<ExtractedData> data30(reader.extractData(plugin_config, 30));
+    EXPECT(lons_of_area(*data30, 2).size() >= nPoints10);
 }
 
 

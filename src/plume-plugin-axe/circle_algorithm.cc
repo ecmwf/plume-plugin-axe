@@ -77,6 +77,16 @@ Circle advect(const Circle& circle, double u, double v, double dt) {
 }
 
 
+// ---------------------- RadiusSchedule ----------------------
+double RadiusSchedule::at(double elapsedHours) const {
+    if (start == end) {
+        return start;
+    }
+    double t = std::min(std::max(elapsedHours, 0.0) / intervalHours, 1.0);
+    return start + t * (end - start);
+}
+
+
 // ---------------------- WindAdvectionAlgorithm ----------------------
 static CircleAlgorithmBuilder<WindAdvectionAlgorithm> windAdvectionAlgorithmBuilder;
 
@@ -91,7 +101,35 @@ WindAdvectionAlgorithm::WindAdvectionAlgorithm(const eckit::Configuration& confi
         }
     }
 
-    circle_ = Circle{config.getDouble("lat"), config.getDouble("lon"), config.getDouble("radius")};
+    // radius: a number (constant) or {"start", "end", "time-interval"} (linear in time, then constant)
+    if (config.isSubConfiguration("radius")) {
+        auto radiusConfig = config.getSubConfiguration("radius");
+        for (const auto& key : {"start", "end", "time-interval"}) {
+            if (!radiusConfig.has(key)) {
+                throw eckit::UserError(prefix + "missing key 'radius." + key + "'", Here());
+            }
+            if (!radiusConfig.isFloatingPoint(key) && !radiusConfig.isIntegral(key)) {
+                throw eckit::UserError(prefix + "'radius." + key + "' must be a number", Here());
+            }
+        }
+        radius_ = RadiusSchedule{radiusConfig.getDouble("start"),
+                                 radiusConfig.getDouble("end"),
+                                 radiusConfig.getDouble("time-interval")};
+        if (!(radius_.start > 0.0) || !(radius_.end > 0.0)) {
+            throw eckit::UserError(prefix + "'radius.start' and 'radius.end' must be > 0 [km]", Here());
+        }
+        if (!(radius_.intervalHours > 0.0)) {
+            throw eckit::UserError(prefix + "'radius.time-interval' must be > 0 [h]", Here());
+        }
+    } else if (config.isFloatingPoint("radius") || config.isIntegral("radius")) {
+        double radius = config.getDouble("radius");
+        radius_ = RadiusSchedule{radius, radius, 1.0};
+    } else {
+        throw eckit::UserError(prefix + "'radius' must be a number or a dictionary "
+                               "{\"start\", \"end\", \"time-interval\"}", Here());
+    }
+
+    circle_ = Circle{config.getDouble("lat"), config.getDouble("lon"), radius_.start};
     checkCircle(prefix, circle_.lat, circle_.radius);
 
     windHeight_ = config.getDouble("wind_height", 5000.0);
@@ -112,6 +150,7 @@ void WindAdvectionAlgorithm::update(const AreaUpdateContext& ctx) {
 
     // first update: the configured circle is the circle at this step
     if (!lastStep_) {
+        firstStep_ = ctx.step;
         lastStep_ = ctx.step;
         return;
     }
@@ -170,11 +209,15 @@ void WindAdvectionAlgorithm::update(const AreaUpdateContext& ctx) {
         circle_ = advect(circle_, uMean, vMean, dt);
     }
 
+    // radius at this step (updated even if the centre has not moved)
+    circle_.radius = radius_.at(*ctx.tstep * (ctx.step - *firstStep_) / 3600.0);
+
     lastStep_ = ctx.step;
 
     if (eckit::mpi::comm().rank() == 0) {
         eckit::Log::info() << "WindAdvectionAlgorithm: step " << ctx.step
-                           << " circle centre (lat:" << circle_.lat << ", lon:" << circle_.lon << ")" << std::endl;
+                           << " circle centre (lat:" << circle_.lat << ", lon:" << circle_.lon << ")"
+                           << " radius:" << circle_.radius << std::endl;
     }
 }
 
@@ -183,6 +226,9 @@ void WindAdvectionAlgorithm::print(std::ostream& ss) const {
     ss << type() << ":(lat:" << circle_.lat << ",";
     ss << "lon:" << circle_.lon << ",";
     ss << "radius:" << circle_.radius << ",";
+    if (radius_.start != radius_.end) {
+        ss << "radius-schedule:" << radius_.start << "->" << radius_.end << "/" << radius_.intervalHours << "h,";
+    }
     ss << "wind:" << uName_ << "/" << vName_ << ")";
 }
 

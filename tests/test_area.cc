@@ -229,6 +229,32 @@ CASE("test advect") {
 }
 
 
+CASE("test radius schedule") {
+
+    using area_extractor::RadiusSchedule;
+
+    const double tol = 1e-12;
+
+    // linear growth over 24 h, then constant
+    RadiusSchedule growing{100.0, 300.0, 24.0};
+    EXPECT(std::abs(growing.at(0.0) - 100.0) < tol);
+    EXPECT(std::abs(growing.at(12.0) - 200.0) < tol);
+    EXPECT(std::abs(growing.at(24.0) - 300.0) < tol);
+    EXPECT(std::abs(growing.at(48.0) - 300.0) < tol);
+    EXPECT(std::abs(growing.at(-1.0) - 100.0) < tol);
+
+    // shrinking
+    RadiusSchedule shrinking{300.0, 100.0, 10.0};
+    EXPECT(std::abs(shrinking.at(5.0) - 200.0) < tol);
+    EXPECT(std::abs(shrinking.at(20.0) - 100.0) < tol);
+
+    // constant
+    RadiusSchedule constant{150.0, 150.0, 1.0};
+    EXPECT_EQUAL(constant.at(0.0), 150.0);
+    EXPECT_EQUAL(constant.at(1000.0), 150.0);
+}
+
+
 namespace {
 
 // algorithm stub: moves the circle 1 degree east at each update

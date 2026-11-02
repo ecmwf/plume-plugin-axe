@@ -98,6 +98,19 @@
                                     "name": "wind-advected",
                                     "lat": 15.0, "lon": 130.0, "radius": 300, "wind_height": 5000
                                 }
+                            },
+                            {
+                                "type": "circle",
+                                "algorithm": {
+                                    "name": "wind-advected",
+                                    "lat": -15.0, "lon": 60.0,
+                                    "wind_height": 5000,
+                                    "radius": {
+                                        "start": 300,
+                                        "end": 800,
+                                        "time-interval": 12
+                                    }
+                                }
                             }
                         ]
                     }
