@@ -94,19 +94,7 @@ void ExtractionBox::print(std::ostream& ss) const {
 
 // ---------------------- ExtractionCircle ----------------------
 ExtractionCircle::ExtractionCircle(int area_id, const Circle& circle) :
-    ExtractionArea(area_id),
-    track_{TrackPoint{0, circle.lat, circle.lon, circle.radius}},
-    timeDependent_{false} {
-}
-
-
-ExtractionCircle::ExtractionCircle(int area_id, std::vector<TrackPoint> track, Interpolation interpolation) :
-    ExtractionArea(area_id), track_{std::move(track)},
-    interpolation_{interpolation}, timeDependent_{true} {
-
-    ASSERT(!track_.empty());
-    std::sort(track_.begin(), track_.end(),
-              [](const TrackPoint& a, const TrackPoint& b){ return a.step < b.step; });
+    ExtractionArea(area_id), circle_{circle} {
 }
 
 
@@ -114,65 +102,15 @@ ExtractionCircle::~ExtractionCircle(){
 }
 
 
-std::optional<Circle> ExtractionCircle::circleAt(int step) const {
-
-    if (!timeDependent_) {
-        const auto& p = track_.front();
-        return Circle{p.lat, p.lon, p.radius};
-    }
-
-    // outside the track range
-    if (step < track_.front().step || step > track_.back().step) {
-        return std::nullopt;
-    }
-
-    // first track point with step > requested step
-    auto upper = std::upper_bound(track_.begin(), track_.end(), step,
-                                  [](int s, const TrackPoint& p){ return s < p.step; });
-    const TrackPoint& a = *(upper - 1);
-
-    // exact match
-    if (a.step == step) {
-        return Circle{a.lat, a.lon, a.radius};
-    }
-
-    if (interpolation_ == Interpolation::None) {
-        return std::nullopt;
-    }
-
-    // linear interpolation (longitude along the shortest arc)
-    const TrackPoint& b = *upper;
-    double t = static_cast<double>(step - a.step) / static_cast<double>(b.step - a.step);
-    double lat = a.lat + t * (b.lat - a.lat);
-    double lon = a.lon + t * wrapLonDiff(b.lon - a.lon);
-    double radius = a.radius + t * (b.radius - a.radius);
-
-    return Circle{lat, lon, radius};
-}
-
-
-bool ExtractionCircle::isPointInside(double lat, double lon, int step) const {
-
-    std::optional<Circle> circle = circleAt(step);
-    if (!circle) {
-        return false;
-    }
-
-    return isPointInsideCircle(lat, lon, *circle);
+bool ExtractionCircle::isPointInside(double lat, double lon, int /*step*/) const {
+    return isPointInsideCircle(lat, lon, circle_);
 }
 
 
 void ExtractionCircle::print(std::ostream& ss) const {
-    if (!timeDependent_) {
-        const auto& p = track_.front();
-        ss << "circle:(lat:" << p.lat << ",";
-        ss << "lon:" << p.lon << ",";
-        ss << "radius:" << p.radius << ")";
-    } else {
-        ss << "track:(points:" << track_.size() << ",";
-        ss << "steps:" << track_.front().step << "-" << track_.back().step << ",";
-        ss << "interpolation:" << (interpolation_ == Interpolation::Linear ? "linear" : "none") << ")";
-    }
+    ss << "circle:(lat:" << circle_.lat << ",";
+    ss << "lon:" << circle_.lon << ",";
+    ss << "radius:" << circle_.radius << ")";
 }
 
 
@@ -188,8 +126,14 @@ AlgorithmCircle::~AlgorithmCircle(){
 }
 
 
-bool AlgorithmCircle::isPointInside(double lat, double lon, int /*step*/) const {
-    return isPointInsideCircle(lat, lon, algorithm_->circle());
+bool AlgorithmCircle::isPointInside(double lat, double lon, int step) const {
+
+    std::optional<Circle> circle = algorithm_->circleAt(step);
+    if (!circle) {
+        return false;
+    }
+
+    return isPointInsideCircle(lat, lon, *circle);
 }
 
 

@@ -74,13 +74,15 @@ CASE("test circle request") {
             "extractions": [
                 {"north": 50, "south": 4, "east": 75, "west": 14},
                 {"type": "circle", "lat": 15.0, "lon": 130.0, "radius": 300},
-                {"type": "circle", "track": {
+                {"type": "circle", "algorithm": {
+                    "name": "track",
                     "points": [
                         {"step": 12, "lat": 16.0, "lon": 128.0, "radius": 350},
                         {"step": 0,  "lat": 15.0, "lon": 130.0, "radius": 300}
                     ]
                 }},
-                {"type": "circle", "track": {
+                {"type": "circle", "algorithm": {
+                    "name": "track",
                     "interpolation": "none",
                     "points": [
                         {"step": 6, "lat": 16.0, "lon": 128.0, "radius": 350}
@@ -94,6 +96,8 @@ CASE("test circle request") {
 
     using area_extractor::ExtractionBox;
     using area_extractor::ExtractionCircle;
+    using area_extractor::AlgorithmCircle;
+    using area_extractor::TrackAlgorithm;
     const auto& areas = request.areas();
     EXPECT_EQUAL(areas.size(), 4);
 
@@ -108,17 +112,22 @@ CASE("test circle request") {
     EXPECT(fixed);
     EXPECT(!fixed->isTimeDependent());
 
-    auto track = std::dynamic_pointer_cast<const ExtractionCircle>(areas[2]);
+    auto track_area = std::dynamic_pointer_cast<const AlgorithmCircle>(areas[2]);
+    EXPECT(track_area);
+    EXPECT(track_area->isTimeDependent());
+    EXPECT(!track_area->requiresTimeStep());
+    auto track = dynamic_cast<const TrackAlgorithm*>(&track_area->algorithm());
     EXPECT(track);
-    EXPECT(track->isTimeDependent());
-    EXPECT(track->interpolation() == ExtractionCircle::Interpolation::Linear);  // default
+    EXPECT(track->interpolation() == TrackAlgorithm::Interpolation::Linear);  // default
     EXPECT_EQUAL(track->track().size(), 2);
     EXPECT_EQUAL(track->track().front().step, 0);  // sorted
 
-    auto track_none = std::dynamic_pointer_cast<const ExtractionCircle>(areas[3]);
+    auto track_none_area = std::dynamic_pointer_cast<const AlgorithmCircle>(areas[3]);
+    EXPECT(track_none_area);
+    EXPECT(track_none_area->isTimeDependent());
+    auto track_none = dynamic_cast<const TrackAlgorithm*>(&track_none_area->algorithm());
     EXPECT(track_none);
-    EXPECT(track_none->isTimeDependent());
-    EXPECT(track_none->interpolation() == ExtractionCircle::Interpolation::None);
+    EXPECT(track_none->interpolation() == TrackAlgorithm::Interpolation::None);
 }
 
 
@@ -129,8 +138,8 @@ CASE("test algorithm circle request") {
     std::string request_str(R"YAML({
         "user": "user11",
         "extractions": [
-            {"type": "circle", "algorithm": {"name": "wind-advection", "lat": 15.0, "lon": 130.0, "radius": 300}},
-            {"type": "circle", "algorithm": {"name": "wind-advection", "lat": 15.0, "lon": 130.0, "radius": 300, "wind_height": 850.5}}
+            {"type": "circle", "algorithm": {"name": "wind-advected", "lat": 15.0, "lon": 130.0, "radius": 300}},
+            {"type": "circle", "algorithm": {"name": "wind-advected", "lat": 15.0, "lon": 130.0, "radius": 300, "wind_height": 850.5}}
         ]
     })YAML");
 
@@ -142,9 +151,11 @@ CASE("test algorithm circle request") {
     EXPECT(algo);
     EXPECT(algo->isTimeDependent());
     EXPECT(algo->requiresTimeStep());
-    EXPECT_EQUAL(algo->algorithm().circle().lat, 15.0);
-    EXPECT_EQUAL(algo->algorithm().circle().lon, 130.0);
-    EXPECT_EQUAL(algo->algorithm().circle().radius, 300.0);
+    auto wind = dynamic_cast<const area_extractor::WindAdvectionAlgorithm*>(&algo->algorithm());
+    EXPECT(wind);
+    EXPECT_EQUAL(wind->circle().lat, 15.0);
+    EXPECT_EQUAL(wind->circle().lon, 130.0);
+    EXPECT_EQUAL(wind->circle().radius, 300.0);
 
     // default wind height (5000 m)
     std::vector<std::string> fields = algo->requiredFields();
@@ -171,36 +182,38 @@ CASE("test invalid circle requests") {
         R"({"type": "circle", "lat": 95.0, "lon": 130.0, "radius": 100})",
         // missing keys of a fixed circle
         R"({"type": "circle", "lat": 15.0, "lon": 130.0})",
-        // track combined with flat keys
-        R"({"type": "circle", "lat": 15.0, "track": {"points": [{"step": 0, "lat": 15.0, "lon": 130.0, "radius": 100}]}})",
-        // track not a dictionary
-        R"({"type": "circle", "track": [{"step": 0, "lat": 15.0, "lon": 130.0, "radius": 100}]})",
-        // track without points
-        R"({"type": "circle", "track": {"interpolation": "linear"}})",
+        // top-level track (old syntax, must be an algorithm)
+        R"({"type": "circle", "track": {"points": [{"step": 0, "lat": 15.0, "lon": 130.0, "radius": 100}]}})",
+        // track algorithm combined with flat keys
+        R"({"type": "circle", "lat": 15.0, "algorithm": {"name": "track", "points": [{"step": 0, "lat": 15.0, "lon": 130.0, "radius": 100}]}})",
+        // track algorithm without points
+        R"({"type": "circle", "algorithm": {"name": "track", "interpolation": "linear"}})",
         // empty points
-        R"({"type": "circle", "track": {"points": []}})",
+        R"({"type": "circle", "algorithm": {"name": "track", "points": []}})",
         // unknown interpolation
-        R"({"type": "circle", "track": {"interpolation": "cubic", "points": [{"step": 0, "lat": 15.0, "lon": 130.0, "radius": 100}]}})",
+        R"({"type": "circle", "algorithm": {"name": "track", "interpolation": "cubic", "points": [{"step": 0, "lat": 15.0, "lon": 130.0, "radius": 100}]}})",
         // duplicate steps
-        R"({"type": "circle", "track": {"points": [{"step": 0, "lat": 15.0, "lon": 130.0, "radius": 100},
-                                                   {"step": 0, "lat": 16.0, "lon": 131.0, "radius": 100}]}})",
+        R"({"type": "circle", "algorithm": {"name": "track", "points": [{"step": 0, "lat": 15.0, "lon": 130.0, "radius": 100},
+                                                                       {"step": 0, "lat": 16.0, "lon": 131.0, "radius": 100}]}})",
         // invalid track point
-        R"({"type": "circle", "track": {"points": [{"step": 0, "lat": 15.0, "lon": 130.0, "radius": -1}]}})",
+        R"({"type": "circle", "algorithm": {"name": "track", "points": [{"step": 0, "lat": 15.0, "lon": 130.0, "radius": -1}]}})",
+        // old algorithm name
+        R"({"type": "circle", "algorithm": {"name": "wind-advection", "lat": 15.0, "lon": 130.0, "radius": 300}})",
         // algorithm not a dictionary
-        R"({"type": "circle", "algorithm": "wind-advection"})",
+        R"({"type": "circle", "algorithm": "wind-advected"})",
         // algorithm without name
         R"({"type": "circle", "algorithm": {"lat": 15.0, "lon": 130.0, "radius": 300}})",
         // unknown algorithm
         R"({"type": "circle", "algorithm": {"name": "teleport", "lat": 15.0, "lon": 130.0, "radius": 300}})",
         // algorithm combined with flat keys or track
-        R"({"type": "circle", "radius": 300, "algorithm": {"name": "wind-advection", "lat": 15.0, "lon": 130.0, "radius": 300}})",
-        R"({"type": "circle", "algorithm": {"name": "wind-advection", "lat": 15.0, "lon": 130.0, "radius": 300},
+        R"({"type": "circle", "radius": 300, "algorithm": {"name": "wind-advected", "lat": 15.0, "lon": 130.0, "radius": 300}})",
+        R"({"type": "circle", "algorithm": {"name": "wind-advected", "lat": 15.0, "lon": 130.0, "radius": 300},
             "track": {"points": [{"step": 0, "lat": 15.0, "lon": 130.0, "radius": 100}]}})",
-        // wind-advection: missing keys, invalid circle, invalid wind height
-        R"({"type": "circle", "algorithm": {"name": "wind-advection", "lat": 15.0, "lon": 130.0}})",
-        R"({"type": "circle", "algorithm": {"name": "wind-advection", "lat": 95.0, "lon": 130.0, "radius": 300}})",
-        R"({"type": "circle", "algorithm": {"name": "wind-advection", "lat": 15.0, "lon": 130.0, "radius": 0}})",
-        R"({"type": "circle", "algorithm": {"name": "wind-advection", "lat": 15.0, "lon": 130.0, "radius": 300, "wind_height": 0}})",
+        // wind-advected: missing keys, invalid circle, invalid wind height
+        R"({"type": "circle", "algorithm": {"name": "wind-advected", "lat": 15.0, "lon": 130.0}})",
+        R"({"type": "circle", "algorithm": {"name": "wind-advected", "lat": 95.0, "lon": 130.0, "radius": 300}})",
+        R"({"type": "circle", "algorithm": {"name": "wind-advected", "lat": 15.0, "lon": 130.0, "radius": 0}})",
+        R"({"type": "circle", "algorithm": {"name": "wind-advected", "lat": 15.0, "lon": 130.0, "radius": 300, "wind_height": 0}})",
     };
 
     for (const auto& extraction : invalid_extractions) {

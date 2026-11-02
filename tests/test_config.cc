@@ -90,7 +90,7 @@ CASE("test time-dependent areas flag") {
             {
                 "user": "user22",
                 "extractions": [
-                    {"type": "circle", "track": {"points": [{"step": 0, "lat": 15.0, "lon": 130.0, "radius": 300}]}}
+                    {"type": "circle", "algorithm": {"name": "track", "points": [{"step": 0, "lat": 15.0, "lon": 130.0, "radius": 300}]}}
                 ]
             }
         ]
@@ -129,14 +129,14 @@ CASE("test runtime area requirements") {
                 "user": "user11",
                 "extractions": [
                     {"north": 50, "south": 4, "east": 75, "west": 14},
-                    {"type": "circle", "algorithm": {"name": "wind-advection", "lat": 15.0, "lon": 130.0, "radius": 300}}
+                    {"type": "circle", "algorithm": {"name": "wind-advected", "lat": 15.0, "lon": 130.0, "radius": 300}}
                 ]
             },
             {
                 "user": "user22",
                 "extractions": [
-                    {"type": "circle", "algorithm": {"name": "wind-advection", "lat": 20.0, "lon": 140.0, "radius": 300}},
-                    {"type": "circle", "algorithm": {"name": "wind-advection", "lat": 20.0, "lon": 140.0, "radius": 300, "wind_height": 70}}
+                    {"type": "circle", "algorithm": {"name": "wind-advected", "lat": 20.0, "lon": 140.0, "radius": 300}},
+                    {"type": "circle", "algorithm": {"name": "wind-advected", "lat": 20.0, "lon": 140.0, "radius": 300, "wind_height": 70}}
                 ]
             }
         ]

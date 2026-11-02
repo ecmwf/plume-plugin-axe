@@ -57,8 +57,8 @@ public:
 
     virtual ~CircleAlgorithm();
 
-    // current circle
-    virtual Circle circle() const = 0;
+    // circle at a step (nullopt => no extraction at this step)
+    virtual std::optional<Circle> circleAt(int step) const = 0;
 
     // update the circle at the context step (collective over MPI ranks)
     virtual void update(const AreaUpdateContext& ctx) = 0;
@@ -99,9 +99,13 @@ public:
 
     ~WindAdvectionAlgorithm() override;
 
-    constexpr static const char* type() { return "wind-advection"; }
+    constexpr static const char* type() { return "wind-advected"; }
 
-    Circle circle() const override { return circle_; }
+    // current circle (as of the last update)
+    const Circle& circle() const { return circle_; }
+
+    // the current circle, at any step
+    std::optional<Circle> circleAt(int /*step*/) const override { return circle_; }
 
     void update(const AreaUpdateContext& ctx) override;
 
@@ -124,6 +128,49 @@ private:
 
     // step of the last update (unset before the first update)
     std::optional<int> lastStep_;
+};
+
+
+/**
+ * @brief Circle following a track of model steps (centre and radius given per step)
+ *
+ */
+class TrackAlgorithm : public CircleAlgorithm {
+
+public:
+
+    enum class Interpolation { None, Linear };
+
+    TrackAlgorithm(const eckit::Configuration& config);
+
+    // track points are sorted by step
+    TrackAlgorithm(std::vector<TrackPoint> track, Interpolation interpolation);
+
+    ~TrackAlgorithm() override;
+
+    constexpr static const char* type() { return "track"; }
+
+    Interpolation interpolation() const { return interpolation_; }
+    const std::vector<TrackPoint>& track() const { return track_; }
+
+    // circle at a step (nullopt outside the track range, or between points without interpolation)
+    std::optional<Circle> circleAt(int step) const override;
+
+    // the track does not depend on the model data
+    void update(const AreaUpdateContext& /*ctx*/) override {}
+
+protected:
+
+    void print(std::ostream& ss) const override;
+
+private:
+
+    void sortTrack();
+
+private:
+
+    std::vector<TrackPoint> track_;
+    Interpolation interpolation_{Interpolation::Linear};
 };
 
 

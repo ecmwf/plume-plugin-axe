@@ -50,8 +50,8 @@ CASE("test polymorphic access") {
     std::vector<std::shared_ptr<const area_extractor::ExtractionArea>> areas{
         std::make_shared<const area_extractor::ExtractionBox>(0, 20.0, 10.0, 40.0, 30.0),
         std::make_shared<const area_extractor::ExtractionCircle>(1, area_extractor::Circle{10.0, 20.0, 200.0}),
-        std::make_shared<const area_extractor::ExtractionCircle>(2, std::vector<area_extractor::TrackPoint>{{0, 10.0, 20.0, 200.0}},
-                                                                 area_extractor::ExtractionCircle::Interpolation::Linear)
+        std::make_shared<const area_extractor::AlgorithmCircle>(2, std::make_shared<area_extractor::TrackAlgorithm>(
+            std::vector<area_extractor::TrackPoint>{{0, 10.0, 20.0, 200.0}}, area_extractor::TrackAlgorithm::Interpolation::Linear))
     };
 
     EXPECT(areas[0]->isPointInside(15.0, 35.0, 0));
@@ -111,32 +111,37 @@ CASE("test circle across the dateline and near the pole") {
 CASE("test track circle - linear interpolation") {
 
     using area_extractor::TrackPoint;
-    using area_extractor::ExtractionCircle;
+    using area_extractor::TrackAlgorithm;
+    using area_extractor::AlgorithmCircle;
 
     // points given unsorted on purpose
     std::vector<TrackPoint> track{{10, 20.0, 40.0, 300.0},
                                   {0, 10.0, 30.0, 100.0}};
-    ExtractionCircle area(3, track, ExtractionCircle::Interpolation::Linear);
+    auto algorithm = std::make_shared<TrackAlgorithm>(track, TrackAlgorithm::Interpolation::Linear);
+    AlgorithmCircle area(3, algorithm);
 
     EXPECT(area.isTimeDependent());
+    EXPECT(!area.requiresTimeStep());
+    EXPECT(area.requiredFields().empty());
+    EXPECT_EQUAL(algorithm->track().front().step, 0);  // sorted
 
     // exact steps
-    auto c0 = area.circleAt(0);
+    auto c0 = algorithm->circleAt(0);
     EXPECT(c0.has_value());
     EXPECT_EQUAL(c0->lat, 10.0);
     EXPECT_EQUAL(c0->lon, 30.0);
     EXPECT_EQUAL(c0->radius, 100.0);
 
     // midpoint
-    auto c5 = area.circleAt(5);
+    auto c5 = algorithm->circleAt(5);
     EXPECT(c5.has_value());
     EXPECT(std::abs(c5->lat - 15.0) < 1e-12);
     EXPECT(std::abs(c5->lon - 35.0) < 1e-12);
     EXPECT(std::abs(c5->radius - 200.0) < 1e-12);
 
     // outside the track range
-    EXPECT(!area.circleAt(-1).has_value());
-    EXPECT(!area.circleAt(11).has_value());
+    EXPECT(!algorithm->circleAt(-1).has_value());
+    EXPECT(!algorithm->circleAt(11).has_value());
     EXPECT(!area.isPointInside(10.0, 30.0, 11));
 
     // the circle moves
@@ -149,14 +154,14 @@ CASE("test track circle - linear interpolation") {
 CASE("test track circle - interpolation across the dateline") {
 
     using area_extractor::TrackPoint;
-    using area_extractor::ExtractionCircle;
+    using area_extractor::TrackAlgorithm;
 
     std::vector<TrackPoint> track{{0, 0.0, 179.0, 100.0},
                                   {2, 0.0, -179.0, 100.0}};
-    ExtractionCircle area(0, track, ExtractionCircle::Interpolation::Linear);
+    TrackAlgorithm algorithm(track, TrackAlgorithm::Interpolation::Linear);
 
     // shortest arc goes through 180, not through 0
-    auto c1 = area.circleAt(1);
+    auto c1 = algorithm.circleAt(1);
     EXPECT(c1.has_value());
     EXPECT(std::abs(area_extractor::greatCircleDistanceKm(c1->lat, c1->lon, 0.0, 180.0)) < 1e-6);
 }
@@ -165,19 +170,21 @@ CASE("test track circle - interpolation across the dateline") {
 CASE("test track circle - no interpolation") {
 
     using area_extractor::TrackPoint;
-    using area_extractor::ExtractionCircle;
+    using area_extractor::TrackAlgorithm;
+    using area_extractor::AlgorithmCircle;
 
     std::vector<TrackPoint> track{{0, 10.0, 30.0, 100.0},
                                   {10, 20.0, 40.0, 300.0}};
-    ExtractionCircle area(0, track, ExtractionCircle::Interpolation::None);
+    auto algorithm = std::make_shared<TrackAlgorithm>(track, TrackAlgorithm::Interpolation::None);
+    AlgorithmCircle area(0, algorithm);
 
-    EXPECT(area.circleAt(0).has_value());
-    EXPECT(area.circleAt(10).has_value());
-    EXPECT(!area.circleAt(5).has_value());
+    EXPECT(algorithm->circleAt(0).has_value());
+    EXPECT(algorithm->circleAt(10).has_value());
+    EXPECT(!algorithm->circleAt(5).has_value());
     EXPECT(!area.isPointInside(15.0, 35.0, 5));
 
     // single-point track: only at that step
-    ExtractionCircle single(1, {{4, 10.0, 30.0, 100.0}}, ExtractionCircle::Interpolation::Linear);
+    TrackAlgorithm single({{4, 10.0, 30.0, 100.0}}, TrackAlgorithm::Interpolation::Linear);
     EXPECT(single.circleAt(4).has_value());
     EXPECT(!single.circleAt(3).has_value());
     EXPECT(!single.circleAt(5).has_value());
@@ -227,7 +234,7 @@ namespace {
 // algorithm stub: moves the circle 1 degree east at each update
 class StubAlgorithm : public area_extractor::CircleAlgorithm {
 public:
-    area_extractor::Circle circle() const override { return circle_; }
+    std::optional<area_extractor::Circle> circleAt(int) const override { return circle_; }
     void update(const area_extractor::AreaUpdateContext&) override { circle_.lon += 1.0; }
     std::vector<std::string> requiredFields() const override { return {"stub-field"}; }
     bool requiresTimeStep() const override { return true; }

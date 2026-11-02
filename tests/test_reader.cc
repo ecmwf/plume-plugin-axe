@@ -126,7 +126,8 @@ CASE("test reader - moving circle") {
                 "user": "user11",
                 "tag": "tc",
                 "extractions": [
-                    {"type": "circle", "track": {
+                    {"type": "circle", "algorithm": {
+                        "name": "track",
                         "interpolation": "linear",
                         "points": [
                             {"step": 0,  "lat": 0.0, "lon": 0.0,  "radius": 1500},
@@ -139,7 +140,8 @@ CASE("test reader - moving circle") {
                 "user": "user22",
                 "tag": "tc-none",
                 "extractions": [
-                    {"type": "circle", "track": {
+                    {"type": "circle", "algorithm": {
+                        "name": "track",
                         "interpolation": "none",
                         "points": [
                             {"step": 0,  "lat": 0.0, "lon": 0.0,  "radius": 1500},
@@ -204,7 +206,7 @@ CASE("test reader - moving circle") {
 }
 
 
-CASE("test reader - wind-advection circle") {
+CASE("test reader - wind-advected circle") {
 
     std::string conf_str(R"YAML({
         "writer": "CSV",
@@ -213,8 +215,8 @@ CASE("test reader - wind-advection circle") {
                 "user": "user11",
                 "tag": "tc",
                 "extractions": [
-                    {"type": "circle", "algorithm": {"name": "wind-advection", "lat": 0.0, "lon": 0.0, "radius": 1500}},
-                    {"type": "circle", "algorithm": {"name": "wind-advection", "lat": 0.0, "lon": 0.0, "radius": 1}}
+                    {"type": "circle", "algorithm": {"name": "wind-advected", "lat": 0.0, "lon": 0.0, "radius": 1500}},
+                    {"type": "circle", "algorithm": {"name": "wind-advected", "lat": 0.0, "lon": 0.0, "radius": 1}}
                 ]
             }
         ]
@@ -248,10 +250,12 @@ CASE("test reader - wind-advection circle") {
     EXPECT(plugin_config.hasTimeDependentAreas());
     EXPECT(plugin_config.requiresTimeStep());
 
-    auto algorithmOf = [&](int iArea) -> const CircleAlgorithm& {
+    auto algorithmOf = [&](int iArea) -> const WindAdvectionAlgorithm& {
         auto area = std::dynamic_pointer_cast<const AlgorithmCircle>(plugin_config.requests()[0].areas()[iArea]);
         EXPECT(area);
-        return area->algorithm();
+        auto algorithm = dynamic_cast<const WindAdvectionAlgorithm*>(&area->algorithm());
+        EXPECT(algorithm);
+        return *algorithm;
     };
 
     auto lons_of_area = [](const ExtractedData& data, int iArea) {

@@ -132,33 +132,22 @@ private:
 
 
 /**
- * @brief Extraction Circle (fixed, or following a track of model steps)
+ * @brief Extraction Circle (fixed)
  *
  */
 class ExtractionCircle : public ExtractionArea {
 
 public:
 
-    enum class Interpolation { None, Linear };
-
-    // fixed circle
     ExtractionCircle(int area_id, const Circle& circle);
-
-    // time-dependent circle (track points are sorted by step)
-    ExtractionCircle(int area_id, std::vector<TrackPoint> track, Interpolation interpolation);
 
     ~ExtractionCircle() override;
 
     using ExtractionArea::isPointInside;
 
-    Interpolation interpolation() const { return interpolation_; }
-    const std::vector<TrackPoint>& track() const { return track_; }
+    const Circle& circle() const { return circle_; }
 
-    // true only for circles defined through a track
-    bool isTimeDependent() const override { return timeDependent_; }
-
-    // circle effective at a step (nullopt => no extraction at this step)
-    std::optional<Circle> circleAt(int step) const;
+    bool isTimeDependent() const override { return false; }
 
     bool isPointInside(double lat, double lon, int step) const override;
 
@@ -167,10 +156,7 @@ protected:
     void print(std::ostream& ss) const override;
 
 private:
-    // a fixed circle is stored as a single-point track
-    std::vector<TrackPoint> track_;
-    Interpolation interpolation_{Interpolation::Linear};
-    bool timeDependent_{false};
+    Circle circle_;
 
 };
 
@@ -193,7 +179,7 @@ public:
 
     bool isTimeDependent() const override { return true; }
 
-    // uses the circle of the last update (step is ignored)
+    // uses the algorithm circle at the step (no circle => not inside)
     bool isPointInside(double lat, double lon, int step) const override;
 
     void update(const AreaUpdateContext& ctx) const override;

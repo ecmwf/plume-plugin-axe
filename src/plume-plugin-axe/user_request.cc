@@ -81,11 +81,17 @@ void UserRequest::add_circle(const eckit::Configuration& extraction) {
     int area_idx = areas_.size();
     std::string prefix = errorPrefix(user_, area_idx);
 
+    // tracks are defined through the "track" algorithm
+    if (extraction.has("track")) {
+        throw eckit::UserError(prefix + "'track' is not a valid circle key => use "
+                               "{\"algorithm\": {\"name\": \"track\", \"interpolation\": ..., \"points\": [...]}}", Here());
+    }
+
     if (extraction.has("algorithm")) {
 
-        // circle computed at runtime by an algorithm
-        if (extraction.has("track") || extraction.has("lat") || extraction.has("lon") || extraction.has("radius")) {
-            throw eckit::UserError(prefix + "'algorithm' cannot be combined with 'track', 'lat', 'lon' or 'radius'", Here());
+        // circle computed by an algorithm (e.g. "track", "wind-advected")
+        if (extraction.has("lat") || extraction.has("lon") || extraction.has("radius")) {
+            throw eckit::UserError(prefix + "'algorithm' cannot be combined with 'lat', 'lon' or 'radius'", Here());
         }
 
         if (!extraction.isSubConfiguration("algorithm")) {
@@ -110,60 +116,6 @@ void UserRequest::add_circle(const eckit::Configuration& extraction) {
         }
 
         areas_.push_back(std::make_shared<const AlgorithmCircle>(area_idx, std::move(circleAlgorithm)));
-
-    } else if (extraction.has("track")) {
-
-        // time-dependent circle
-        if (extraction.has("lat") || extraction.has("lon") || extraction.has("radius")) {
-            throw eckit::UserError(prefix + "'track' cannot be combined with 'lat', 'lon' or 'radius'", Here());
-        }
-
-        if (!extraction.isSubConfiguration("track")) {
-            throw eckit::UserError(prefix + "'track' must be a dictionary", Here());
-        }
-        eckit::LocalConfiguration track = extraction.getSubConfiguration("track");
-
-        // interpolation (optional, default "linear")
-        std::string interp = track.getString("interpolation", "linear");
-        ExtractionCircle::Interpolation interpolation;
-        if (interp == "linear") {
-            interpolation = ExtractionCircle::Interpolation::Linear;
-        } else if (interp == "none") {
-            interpolation = ExtractionCircle::Interpolation::None;
-        } else {
-            throw eckit::UserError(prefix + "unknown track interpolation '" + interp + "' (expected 'none' or 'linear')", Here());
-        }
-
-        // track points
-        if (!track.has("points")) {
-            throw eckit::UserError(prefix + "'track' requires a 'points' list", Here());
-        }
-        std::vector<eckit::LocalConfiguration> points = track.getSubConfigurations("points");
-        if (points.empty()) {
-            throw eckit::UserError(prefix + "'track.points' must not be empty", Here());
-        }
-
-        std::vector<TrackPoint> trackPoints;
-        for (const auto& point : points) {
-            TrackPoint tp{point.getInt("step"),
-                          point.getDouble("lat"),
-                          point.getDouble("lon"),
-                          point.getDouble("radius")};
-            checkCircle(prefix, tp.lat, tp.radius);
-            trackPoints.push_back(tp);
-        }
-
-        // no duplicate steps
-        std::vector<int> steps;
-        for (const auto& tp : trackPoints) {
-            steps.push_back(tp.step);
-        }
-        std::sort(steps.begin(), steps.end());
-        if (std::adjacent_find(steps.begin(), steps.end()) != steps.end()) {
-            throw eckit::UserError(prefix + "'track.points' contains duplicate steps", Here());
-        }
-
-        areas_.push_back(std::make_shared<const ExtractionCircle>(area_idx, std::move(trackPoints), interpolation));
 
     } else {
 

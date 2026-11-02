@@ -187,6 +187,110 @@ void WindAdvectionAlgorithm::print(std::ostream& ss) const {
 }
 
 
+// ---------------------- TrackAlgorithm ----------------------
+static CircleAlgorithmBuilder<TrackAlgorithm> trackAlgorithmBuilder;
+
+
+TrackAlgorithm::TrackAlgorithm(const eckit::Configuration& config) {
+
+    std::string prefix = std::string("TrackAlgorithm: ");
+
+    // interpolation (optional, default "linear")
+    std::string interp = config.getString("interpolation", "linear");
+    if (interp == "linear") {
+        interpolation_ = Interpolation::Linear;
+    } else if (interp == "none") {
+        interpolation_ = Interpolation::None;
+    } else {
+        throw eckit::UserError(prefix + "unknown interpolation '" + interp + "' (expected 'none' or 'linear')", Here());
+    }
+
+    // track points
+    if (!config.has("points")) {
+        throw eckit::UserError(prefix + "'points' list is required", Here());
+    }
+    std::vector<eckit::LocalConfiguration> points = config.getSubConfigurations("points");
+    if (points.empty()) {
+        throw eckit::UserError(prefix + "'points' must not be empty", Here());
+    }
+
+    for (const auto& point : points) {
+        TrackPoint tp{point.getInt("step"),
+                      point.getDouble("lat"),
+                      point.getDouble("lon"),
+                      point.getDouble("radius")};
+        checkCircle(prefix, tp.lat, tp.radius);
+        track_.push_back(tp);
+    }
+
+    sortTrack();
+
+    // no duplicate steps
+    auto dup = std::adjacent_find(track_.begin(), track_.end(),
+                                  [](const TrackPoint& a, const TrackPoint& b){ return a.step == b.step; });
+    if (dup != track_.end()) {
+        throw eckit::UserError(prefix + "'points' contains duplicate steps", Here());
+    }
+}
+
+
+TrackAlgorithm::TrackAlgorithm(std::vector<TrackPoint> track, Interpolation interpolation) :
+    track_{std::move(track)}, interpolation_{interpolation} {
+
+    ASSERT(!track_.empty());
+    sortTrack();
+}
+
+
+TrackAlgorithm::~TrackAlgorithm() {
+}
+
+
+void TrackAlgorithm::sortTrack() {
+    std::sort(track_.begin(), track_.end(),
+              [](const TrackPoint& a, const TrackPoint& b){ return a.step < b.step; });
+}
+
+
+std::optional<Circle> TrackAlgorithm::circleAt(int step) const {
+
+    // outside the track range
+    if (step < track_.front().step || step > track_.back().step) {
+        return std::nullopt;
+    }
+
+    // first track point with step > requested step
+    auto upper = std::upper_bound(track_.begin(), track_.end(), step,
+                                  [](int s, const TrackPoint& p){ return s < p.step; });
+    const TrackPoint& a = *(upper - 1);
+
+    // exact match
+    if (a.step == step) {
+        return Circle{a.lat, a.lon, a.radius};
+    }
+
+    if (interpolation_ == Interpolation::None) {
+        return std::nullopt;
+    }
+
+    // linear interpolation (longitude along the shortest arc)
+    const TrackPoint& b = *upper;
+    double t = static_cast<double>(step - a.step) / static_cast<double>(b.step - a.step);
+    double lat = a.lat + t * (b.lat - a.lat);
+    double lon = a.lon + t * wrapLonDiff(b.lon - a.lon);
+    double radius = a.radius + t * (b.radius - a.radius);
+
+    return Circle{lat, lon, radius};
+}
+
+
+void TrackAlgorithm::print(std::ostream& ss) const {
+    ss << type() << ":(points:" << track_.size() << ",";
+    ss << "steps:" << track_.front().step << "-" << track_.back().step << ",";
+    ss << "interpolation:" << (interpolation_ == Interpolation::Linear ? "linear" : "none") << ")";
+}
+
+
 // ---------------------- CircleAlgorithmFactory ----------------------
 CircleAlgorithmFactory::CircleAlgorithmFactory() {}
 

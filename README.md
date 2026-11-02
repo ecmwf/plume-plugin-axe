@@ -83,24 +83,40 @@ Each entry is one of the following shapes (shapes can be mixed in the same reque
 ```json
 {"north": 5, "south": 4, "east": 15, "west": 14}
 {"type": "circle", "lat": 15.0, "lon": 130.0, "radius": 300}
-{"type": "circle", "track": {
+{"type": "circle", "algorithm": {
+    "name": "track",
     "interpolation": "linear",
     "points": [
         {"step": 0,  "lat": 15.0, "lon": 130.0, "radius": 300},
         {"step": 12, "lat": 16.2, "lon": 128.5, "radius": 350}
     ]
 }}
+{"type": "circle", "algorithm": {
+    "name": "wind-advected",
+    "lat": 15.0, "lon": 130.0, "radius": 300, "wind_height": 5000
+}}
 ```
 
 - **Bounding box** (default, `"type": "bbox"` can be omitted): grid points with `south <= lat <= north` and `west <= lon <= east`.
-- **Fixed circle**: grid points whose great-circle distance to (`lat`, `lon`) is `<= radius` [km], at every step.
-- **Time-dependent circle** (`track`): the circle centre and radius change with the model step (`NSTEP`).
-  - `points`: list of `{step, lat, lon, radius}` entries (any order, no duplicate steps).
-  - `interpolation` (optional, default `"linear"`):
-    - `"linear"`: at steps between two points, centre and radius are linearly interpolated;
-    - `"none"`: the circle is extracted only at steps listed in `points`.
-  - Before the first or after the last point, the circle selects no grid points.
-  - Extraction still happens only at steps where `NSTEP % runs_every == 0`. With `"none"`, track steps that are not multiples of `runs_every` are never extracted.
+- **Circle** (`"type": "circle"`): grid points whose great-circle distance to the centre is `<= radius` [km]. A circle has exactly one of these forms:
+  - **Fixed circle**: only the keys `lat`, `lon` and `radius`. It applies at every step.
+  - **Algorithm circle**: only the key `algorithm`, a dictionary with a `name` plus the algorithm-specific keys. The centre (and radius) are computed at runtime:
+    - `"track"`: the centre and radius change with the model step (`NSTEP`).
+      - `points`: list of `{step, lat, lon, radius}` entries (any order, no duplicate steps).
+      - `interpolation` (optional, default `"linear"`):
+        - `"linear"`: at steps between two points, centre and radius are linearly interpolated;
+        - `"none"`: the circle is extracted only at steps listed in `points`.
+      - Before the first or after the last point, the circle selects no grid points.
+      - Extraction still happens only at steps where `NSTEP % runs_every == 0`. With `"none"`, track steps that are not multiples of `runs_every` are never extracted.
+    - `"wind-advected"`: the circle starts at (`lat`, `lon`) with a constant `radius`.
+      - At each executed step, the centre is moved by the mean wind inside the circle (`u` and `v` interpolated at `wind_height` metres, default 5000) times the time elapsed since the previous executed step (`TSTEP` × elapsed steps). Points are then extracted inside the moved circle.
+      - The plugin `"parameters"` must request the wind fields and `TSTEP`, e.g.:
+        ```json
+        {"name": "u", "type": "ATLAS_FIELD", "height": 5000},
+        {"name": "v", "type": "ATLAS_FIELD", "height": 5000},
+        {"name": "TSTEP", "type": "DOUBLE"}
+        ```
+  - Combining `algorithm` with `lat`/`lon`/`radius` is an error. A top-level `track` key is no longer accepted: use the `"track"` algorithm.
 
 # Testing
 To test the installation:
