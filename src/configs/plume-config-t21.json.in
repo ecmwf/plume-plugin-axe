@@ -16,13 +16,17 @@
                     {
                         "name": "u",
                         "type": "ATLAS_FIELD",
-                        "height": 70
+                        "height": 5000
                     },
                     {
                         "name": "v",
                         "type": "ATLAS_FIELD",
-                        "height": 70
-                    }
+                        "height": 5000
+                    },
+                    {
+                        "name": "TSTEP",
+                        "type": "DOUBLE"
+                    }                    
                 ]
             ],
             "core-config": {
@@ -66,6 +70,10 @@
                                     {"step": 0,  "lat": -15.0, "lon": 60.0, "radius": 800},
                                     {"step": 12, "lat": -18.0, "lon": 55.0, "radius": 800}
                                 ]
+                            }},
+                            {"type": "circle", "algorithm": {
+                                "name": "wind-advection",
+                                "lat": 15.0, "lon": 130.0, "radius": 300, "wind_height": 5000
                             }}
                         ]
                     }

@@ -18,6 +18,3 @@ ecbuild_configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/plume-config-t21.json.in
     ${CMAKE_CURRENT_SOURCE_DIR}/plume-config-t21.json @ONLY
 )
-
-# configuration files (development only)
-add_subdirectory(dev)
