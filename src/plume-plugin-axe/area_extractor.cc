@@ -9,6 +9,7 @@
  * does it submit to any jurisdiction.
  */
 
+#include <algorithm>
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -63,8 +64,12 @@ void AreaExtractorCore::setup() {
     // Create the reader
     reader_ = std::make_unique<DataReader>(fields);
 
-    // Extract data (areas evaluated at the current model step)
+    // check that fields/params needed by runtime areas are available
+    checkAreaRequirements();
+
+    // Initialise the runtime areas and extract data (areas evaluated at the current model step)
     int timeStep = modelData().getParam<int>("NSTEP");
+    reader_->updateAreas(*config_, timeStep, this->timeStep());
     data_.reset( reader_->extractData(*config_, timeStep) );
 
     // Construct the data writer
@@ -93,8 +98,9 @@ void AreaExtractorCore::run() {
         filename = std::string(outputDir) + "/" + filename;
     }
             
-    // Update data (re-select the points if any area changes with the time step)
+    // Update data (move the runtime areas, then re-select the points if any area changes with the time step)
     if (config_->hasTimeDependentAreas()) {
+        reader_->updateAreas(*config_, timeStep, this->timeStep());
         data_.reset( reader_->extractData(*config_, timeStep) );
     } else {
         reader_->updateData(*data_);
@@ -108,6 +114,33 @@ void AreaExtractorCore::run() {
 void AreaExtractorCore::teardown() {
     // nothing to do here..
 };
+
+
+std::optional<double> AreaExtractorCore::timeStep() {
+    if (!config_->requiresTimeStep()) {
+        return std::nullopt;
+    }
+    return modelData().getParam<double>("TSTEP");
+}
+
+
+void AreaExtractorCore::checkAreaRequirements() {
+
+    const auto& params = config_->parameters();
+    for (const auto& field : config_->requiredFields()) {
+        if (std::find(params.begin(), params.end(), field) == params.end()) {
+            throw eckit::UserError("AreaExtractorCore::setup: field '" + field + "' is required by an extraction area "
+                                   "but is not available => request it in the plugin \"parameters\" "
+                                   "(e.g. {\"name\": \"u\", \"type\": \"ATLAS_FIELD\", \"height\": 5000} for \"u;hl;5000\")", Here());
+        }
+    }
+
+    if (config_->requiresTimeStep() && !modelData().hasParameter("TSTEP")) {
+        throw eckit::UserError("AreaExtractorCore::setup: TSTEP is required by an extraction area "
+                               "but is not available => request it in the plugin \"parameters\" "
+                               "({\"name\": \"TSTEP\", \"type\": \"DOUBLE\"})", Here());
+    }
+}
 
 
 REGISTER_LIBRARY(AreaExtractor)

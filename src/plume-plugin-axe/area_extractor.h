@@ -14,6 +14,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <optional>
 
 #include "plume/PluginCore.h"
 #include "plume/Plugin.h"
@@ -44,6 +45,14 @@ public:
     void teardown() override;
 
     constexpr static const char* type() { return "area-extractor-core"; }
+
+private:
+
+    // model time step TSTEP (only read if required by some area)
+    std::optional<double> timeStep();
+
+    // check that the data needed to update the areas at runtime is available
+    void checkAreaRequirements();
 
 private:
 

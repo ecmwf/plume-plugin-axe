@@ -19,6 +19,7 @@
 
 
 #include "plugin_types.h"
+#include "circle_algorithm.h"
 #include "data_reader.h"
 
 
@@ -127,6 +128,18 @@ ExtractedData* DataReader::extractData(const PluginConfig& config, int step) {
     }
 
     return data;
+}
+
+// Update the areas computed at runtime (same order on all ranks)
+void DataReader::updateAreas(const PluginConfig& config, int step, std::optional<double> tstep) {
+
+    AreaUpdateContext ctx{step, tstep, fieldViewMap_, fields_[0].functionspace()};
+
+    for (const auto& request: config.requests()) {
+        for (const auto& area : request.areas()) {
+            area->update(ctx);
+        }
+    }
 }
 
 // Read the fields and update the values

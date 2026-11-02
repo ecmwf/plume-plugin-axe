@@ -11,10 +11,16 @@
 #pragma once
 
 #include <iostream>
+#include <memory>
 #include <optional>
+#include <string>
 #include <vector>
 
 namespace area_extractor {
+
+// fwd declarations
+class CircleAlgorithm;
+struct AreaUpdateContext;
 
 /**
  * @brief Circle at a given time step (radius in km)
@@ -63,6 +69,15 @@ public:
 
     // only valid for areas that do not depend on the model step
     bool isPointInside(double lat, double lon) const;
+
+    // update the area at runtime (collective over MPI ranks, no-op by default)
+    virtual void update(const AreaUpdateContext& /*ctx*/) const {}
+
+    // fields needed to update the area at runtime
+    virtual std::vector<std::string> requiredFields() const { return {}; }
+
+    // true if updating the area needs the model time step (TSTEP)
+    virtual bool requiresTimeStep() const { return false; }
 
     friend std::ostream& operator<<(std::ostream& ss, const ExtractionArea& obj);
 
@@ -156,6 +171,44 @@ private:
     std::vector<TrackPoint> track_;
     Interpolation interpolation_{Interpolation::Linear};
     bool timeDependent_{false};
+
+};
+
+
+/**
+ * @brief Extraction Circle computed at runtime by a circle algorithm
+ *
+ */
+class AlgorithmCircle : public ExtractionArea {
+
+public:
+
+    AlgorithmCircle(int area_id, std::shared_ptr<CircleAlgorithm> algorithm);
+
+    ~AlgorithmCircle() override;
+
+    using ExtractionArea::isPointInside;
+
+    const CircleAlgorithm& algorithm() const { return *algorithm_; }
+
+    bool isTimeDependent() const override { return true; }
+
+    // uses the circle of the last update (step is ignored)
+    bool isPointInside(double lat, double lon, int step) const override;
+
+    void update(const AreaUpdateContext& ctx) const override;
+
+    std::vector<std::string> requiredFields() const override;
+
+    bool requiresTimeStep() const override;
+
+protected:
+
+    void print(std::ostream& ss) const override;
+
+private:
+    // the area is (shallow) const, the algorithm holds the mutable state
+    std::shared_ptr<CircleAlgorithm> algorithm_;
 
 };
 

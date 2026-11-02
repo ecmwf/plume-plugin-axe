@@ -28,8 +28,10 @@
 #include "plume/data/FieldAccess.h"
 
 
+#include "circle_algorithm.h"
 #include "data_reader.h"
 #include "extracted_data.h"
+#include "geo_utils.h"
 #include "plugin_config.h"
 
 
@@ -199,6 +201,96 @@ CASE("test reader - moving circle") {
 
     // outside the track range
     EXPECT(data11->isEmpty());
+}
+
+
+CASE("test reader - wind-advection circle") {
+
+    std::string conf_str(R"YAML({
+        "writer": "CSV",
+        "requests": [
+            {
+                "user": "user11",
+                "tag": "tc",
+                "extractions": [
+                    {"type": "circle", "algorithm": {"name": "wind-advection", "lat": 0.0, "lon": 0.0, "radius": 1500}},
+                    {"type": "circle", "algorithm": {"name": "wind-advection", "lat": 0.0, "lon": 0.0, "radius": 1}}
+                ]
+            }
+        ]
+    })YAML");
+    eckit::YAMLConfiguration conf(conf_str);
+
+    // uniform eastward wind of 50 m/s
+    const double uWind = 50.0;
+    const double tstep = 3600.0;
+    std::vector<std::string> params = {"u;hl;5000", "v;hl;5000"};
+    std::vector<double> values = {uWind, 0.0};
+    std::vector<plume::data::FieldView> fields;
+
+    atlas::Grid grid("O8");
+    atlas::util::Config grid_config;
+    grid_config.set("halo", 0);
+    grid_config.set("levels", 1);
+    grid_config.set("periodic_points", true);
+    atlas::functionspace::StructuredColumns fs(grid, atlas::grid::Partitioner("equal_regions"), grid_config);
+    for (size_t i = 0; i < params.size(); i++) {
+        atlas::Field field = fs.createField<FIELD_TYPE_REAL>(atlas::option::name(params[i]));
+        auto view = atlas::array::make_view<FIELD_TYPE_REAL,2>(field);
+        for (atlas::idx_t j = 0; j < view.shape(0); j++) {
+            view(j, 0) = values[i];
+        }
+        fields.push_back(plume::data::FieldView(field));
+    }
+
+    DataReader reader(fields);
+    PluginConfig plugin_config(conf, params);
+    EXPECT(plugin_config.hasTimeDependentAreas());
+    EXPECT(plugin_config.requiresTimeStep());
+
+    auto algorithmOf = [&](int iArea) -> const CircleAlgorithm& {
+        auto area = std::dynamic_pointer_cast<const AlgorithmCircle>(plugin_config.requests()[0].areas()[iArea]);
+        EXPECT(area);
+        return area->algorithm();
+    };
+
+    auto lons_of_area = [](const ExtractedData& data, int iArea) {
+        std::vector<double> lons;
+        for (int i : data.find({.user="user11", .areaIdx=iArea})) {
+            double lon = data.get_lon(i);
+            lons.push_back(lon > 180.0 ? lon - 360.0 : lon);
+        }
+        return lons;
+    };
+
+    // first update: the configured circle is kept
+    reader.updateAreas(plugin_config, 0, tstep);
+    EXPECT_EQUAL(algorithmOf(0).circle().lon, 0.0);
+    std::unique_ptr<ExtractedData> data0(reader.extractData(plugin_config, 0));
+
+    // same step again: no move
+    reader.updateAreas(plugin_config, 0, tstep);
+    EXPECT_EQUAL(algorithmOf(0).circle().lon, 0.0);
+
+    // after 10 steps: moved east by uWind * tstep * 10 [m]
+    reader.updateAreas(plugin_config, 10, tstep);
+    double expectedLon = uWind * tstep * 10 / (EARTH_RADIUS_KM * 1000.0) * RAD_TO_DEG;
+    EXPECT(std::abs(algorithmOf(0).circle().lon - expectedLon) < 1e-6);
+    EXPECT(std::abs(algorithmOf(0).circle().lat) < 1e-9);
+    std::unique_ptr<ExtractedData> data10(reader.extractData(plugin_config, 10));
+
+    // the extracted points follow the circle
+    auto lons0 = lons_of_area(*data0, 0);
+    auto lons10 = lons_of_area(*data10, 0);
+    EXPECT(!lons0.empty());
+    EXPECT(!lons10.empty());
+    for (double lon : lons0)  { EXPECT(std::abs(lon) < 20.0); }
+    for (double lon : lons10) { EXPECT(std::abs(lon - expectedLon) < 20.0); }
+    EXPECT(lons0 != lons10);
+
+    // a circle without grid points is not moved
+    EXPECT(lons_of_area(*data10, 1).empty());
+    EXPECT_EQUAL(algorithmOf(1).circle().lon, 0.0);
 }
 
 

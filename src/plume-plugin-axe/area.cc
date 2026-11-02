@@ -14,6 +14,8 @@
 
 #include "eckit/exception/Exceptions.h"
 
+#include "geo_utils.h"
+#include "circle_algorithm.h"
 #include "area.h"
 
 
@@ -21,25 +23,14 @@ namespace area_extractor {
 
 namespace {
 
-// Earth radius [km] (same value used by Atlas/IFS)
-constexpr double EARTH_RADIUS_KM = 6371.229;
+bool isPointInsideCircle(double lat, double lon, const Circle& circle) {
 
-constexpr double PI = 3.14159265358979323846;
-
-constexpr double DEG_TO_RAD = PI / 180.0;
-
-// km per degree of latitude
-constexpr double KM_PER_DEG_LAT = EARTH_RADIUS_KM * DEG_TO_RAD;
-
-// wrap a longitude difference to (-180, 180]
-double wrapLonDiff(double dlon) {
-    dlon = std::fmod(dlon, 360.0);
-    if (dlon > 180.0) {
-        dlon -= 360.0;
-    } else if (dlon <= -180.0) {
-        dlon += 360.0;
+    // cheap latitude-band pre-filter
+    if (std::abs(lat - circle.lat) * KM_PER_DEG_LAT > circle.radius) {
+        return false;
     }
-    return dlon;
+
+    return greatCircleDistanceKm(lat, lon, circle.lat, circle.lon) <= circle.radius;
 }
 
 } // namespace
@@ -167,12 +158,7 @@ bool ExtractionCircle::isPointInside(double lat, double lon, int step) const {
         return false;
     }
 
-    // cheap latitude-band pre-filter
-    if (std::abs(lat - circle->lat) * KM_PER_DEG_LAT > circle->radius) {
-        return false;
-    }
-
-    return greatCircleDistanceKm(lat, lon, circle->lat, circle->lon) <= circle->radius;
+    return isPointInsideCircle(lat, lon, *circle);
 }
 
 
@@ -187,6 +173,43 @@ void ExtractionCircle::print(std::ostream& ss) const {
         ss << "steps:" << track_.front().step << "-" << track_.back().step << ",";
         ss << "interpolation:" << (interpolation_ == Interpolation::Linear ? "linear" : "none") << ")";
     }
+}
+
+
+// ---------------------- AlgorithmCircle ----------------------
+AlgorithmCircle::AlgorithmCircle(int area_id, std::shared_ptr<CircleAlgorithm> algorithm) :
+    ExtractionArea(area_id), algorithm_{std::move(algorithm)} {
+
+    ASSERT(algorithm_);
+}
+
+
+AlgorithmCircle::~AlgorithmCircle(){
+}
+
+
+bool AlgorithmCircle::isPointInside(double lat, double lon, int /*step*/) const {
+    return isPointInsideCircle(lat, lon, algorithm_->circle());
+}
+
+
+void AlgorithmCircle::update(const AreaUpdateContext& ctx) const {
+    algorithm_->update(ctx);
+}
+
+
+std::vector<std::string> AlgorithmCircle::requiredFields() const {
+    return algorithm_->requiredFields();
+}
+
+
+bool AlgorithmCircle::requiresTimeStep() const {
+    return algorithm_->requiresTimeStep();
+}
+
+
+void AlgorithmCircle::print(std::ostream& ss) const {
+    ss << "algorithm:(" << *algorithm_ << ")";
 }
 
 

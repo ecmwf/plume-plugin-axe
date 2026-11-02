@@ -16,6 +16,8 @@
 
 #include "area.h"
 #include "area_extractor.h"
+#include "circle_algorithm.h"
+#include "geo_utils.h"
 
 
 using namespace eckit::testing;
@@ -179,6 +181,92 @@ CASE("test track circle - no interpolation") {
     EXPECT(single.circleAt(4).has_value());
     EXPECT(!single.circleAt(3).has_value());
     EXPECT(!single.circleAt(5).has_value());
+}
+
+
+CASE("test advect") {
+
+    using area_extractor::Circle;
+    using area_extractor::advect;
+
+    const double radiusM = area_extractor::EARTH_RADIUS_KM * 1000.0;
+    const double tol = 1e-9;
+
+    // pure eastward wind at the equator
+    Circle east = advect(Circle{0.0, 10.0, 100.0}, 10.0, 0.0, 900.0);
+    EXPECT(std::abs(east.lat - 0.0) < tol);
+    EXPECT(std::abs(east.lon - (10.0 + 10.0 * 900.0 / radiusM * area_extractor::RAD_TO_DEG)) < tol);
+    EXPECT_EQUAL(east.radius, 100.0);
+
+    // eastward wind at 60N moves twice as many degrees of longitude
+    Circle east60 = advect(Circle{60.0, 10.0, 100.0}, 10.0, 0.0, 900.0);
+    EXPECT(std::abs((east60.lon - 10.0) - 2.0 * (east.lon - 10.0)) < 1e-6);
+
+    // pure northward wind
+    Circle north = advect(Circle{10.0, 20.0, 100.0}, 0.0, 10.0, 900.0);
+    EXPECT(std::abs(north.lat - (10.0 + 10.0 * 900.0 / radiusM * area_extractor::RAD_TO_DEG)) < tol);
+    EXPECT(std::abs(north.lon - 20.0) < tol);
+
+    // dt = 0 => no move
+    Circle still = advect(Circle{10.0, 20.0, 100.0}, 10.0, 10.0, 0.0);
+    EXPECT(std::abs(still.lat - 10.0) < tol);
+    EXPECT(std::abs(still.lon - 20.0) < tol);
+
+    // dateline crossing => longitude wrapped to (-180, 180]
+    Circle wrapped = advect(Circle{0.0, 179.9, 100.0}, 20.0, 0.0, 3600.0);
+    EXPECT(wrapped.lon < -179.0);
+
+    // pole => latitude clamped
+    Circle pole = advect(Circle{89.9, 0.0, 100.0}, 0.0, 100.0, 36000.0);
+    EXPECT_EQUAL(pole.lat, 90.0);
+}
+
+
+namespace {
+
+// algorithm stub: moves the circle 1 degree east at each update
+class StubAlgorithm : public area_extractor::CircleAlgorithm {
+public:
+    area_extractor::Circle circle() const override { return circle_; }
+    void update(const area_extractor::AreaUpdateContext&) override { circle_.lon += 1.0; }
+    std::vector<std::string> requiredFields() const override { return {"stub-field"}; }
+    bool requiresTimeStep() const override { return true; }
+protected:
+    void print(std::ostream& ss) const override { ss << "stub"; }
+private:
+    area_extractor::Circle circle_{10.0, 20.0, 50.0};
+};
+
+}  // namespace
+
+
+CASE("test algorithm circle") {
+
+    using area_extractor::AlgorithmCircle;
+
+    auto algorithm = std::make_shared<StubAlgorithm>();
+    std::shared_ptr<const area_extractor::ExtractionArea> area = std::make_shared<const AlgorithmCircle>(3, algorithm);
+
+    EXPECT_EQUAL(area->id(), 3);
+    EXPECT(area->isTimeDependent());
+    EXPECT(area->requiresTimeStep());
+    EXPECT_EQUAL(area->requiredFields().size(), 1);
+    EXPECT_EQUAL(area->requiredFields()[0], "stub-field");
+
+    EXPECT(area->isPointInside(10.0, 20.0, 0));
+    EXPECT(!area->isPointInside(10.0, 21.0, 0));
+
+    // the area follows the algorithm circle
+    std::map<std::string, plume::data::FieldView> fields;
+    area_extractor::AreaUpdateContext ctx{1, 900.0, fields, atlas::FunctionSpace()};
+    area->update(ctx);
+    EXPECT(!area->isPointInside(10.0, 20.0, 1));
+    EXPECT(area->isPointInside(10.0, 21.0, 1));
+
+    // boxes and fixed circles do not need runtime data
+    area_extractor::ExtractionBox box(0, 20.0, 10.0, 40.0, 30.0);
+    EXPECT(box.requiredFields().empty());
+    EXPECT(!box.requiresTimeStep());
 }
 
 

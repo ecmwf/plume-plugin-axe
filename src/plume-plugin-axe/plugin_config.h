@@ -43,6 +43,12 @@ public:
     // true if any requested area changes with the time step
     bool hasTimeDependentAreas() const {return hasTimeDependentAreas_;}
 
+    // fields needed to update the areas at runtime (no duplicates)
+    const std::vector<std::string>& requiredFields() const {return requiredFields_;}
+
+    // true if updating any area needs the model time step (TSTEP)
+    bool requiresTimeStep() const {return requiresTimeStep_;}
+
     friend std::ostream& operator<<(std::ostream& ss, const PluginConfig& obj);
 
     std::string userName(int uid) const;
@@ -74,6 +80,12 @@ private:
 
     // any time-dependent area in the requests
     bool hasTimeDependentAreas_{false};
+
+    // fields needed to update the areas at runtime
+    std::vector<std::string> requiredFields_;
+
+    // any area that needs TSTEP to be updated
+    bool requiresTimeStep_{false};
 
     // user to user UID
     std::map<std::string,int> user_to_uid_;

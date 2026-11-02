@@ -3,6 +3,24 @@
         {
             "name": "AreaExtractor",
             "lib": "plume_plugin_axe_DP",
+            "parameters": [
+                [
+                    {
+                        "name": "u",
+                        "type": "ATLAS_FIELD",
+                        "height": 5000
+                    },
+                    {
+                        "name": "v",
+                        "type": "ATLAS_FIELD",
+                        "height": 5000
+                    },
+                    {
+                        "name": "TSTEP",
+                        "type": "DOUBLE"
+                    }
+                ]
+            ],
             "core-config": {
                 "writer": "CovJSON",
                 "runs_every": 2,
@@ -57,6 +75,10 @@
                                     {"step": 12, "lat": 16.2, "lon": 128.5, "radius": 350},
                                     {"step": 24, "lat": 17.5, "lon": 126.8, "radius": 400}
                                 ]
+                            }},
+                            {"type": "circle", "algorithm": {
+                                "name": "wind-advection",
+                                "lat": 15.0, "lon": 130.0, "radius": 300, "wind_height": 5000
                             }}
                         ]
                     }

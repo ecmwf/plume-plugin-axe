@@ -29,7 +29,10 @@ foreach(prec_def ${PLUGINS_DEFINITIONS})
 
         SOURCES
             area.h
-            area.cc        
+            area.cc
+            geo_utils.h
+            circle_algorithm.h
+            circle_algorithm.cc
             plugin_utils.h
             plugin_utils.cc
             plugin_config.h

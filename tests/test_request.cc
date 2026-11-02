@@ -14,6 +14,7 @@
 #include "eckit/config/YAMLConfiguration.h"
 
 #include "user_request.h"
+#include "circle_algorithm.h"
 
 using namespace eckit::testing;
 
@@ -121,6 +122,43 @@ CASE("test circle request") {
 }
 
 
+CASE("test algorithm circle request") {
+
+    using area_extractor::AlgorithmCircle;
+
+    std::string request_str(R"YAML({
+        "user": "user11",
+        "extractions": [
+            {"type": "circle", "algorithm": {"name": "wind-advection", "lat": 15.0, "lon": 130.0, "radius": 300}},
+            {"type": "circle", "algorithm": {"name": "wind-advection", "lat": 15.0, "lon": 130.0, "radius": 300, "wind_height": 850.5}}
+        ]
+    })YAML");
+
+    eckit::YAMLConfiguration conf(request_str);
+    area_extractor::UserRequest request(conf);
+    EXPECT_EQUAL(request.areas().size(), 2);
+
+    auto algo = std::dynamic_pointer_cast<const AlgorithmCircle>(request.areas()[0]);
+    EXPECT(algo);
+    EXPECT(algo->isTimeDependent());
+    EXPECT(algo->requiresTimeStep());
+    EXPECT_EQUAL(algo->algorithm().circle().lat, 15.0);
+    EXPECT_EQUAL(algo->algorithm().circle().lon, 130.0);
+    EXPECT_EQUAL(algo->algorithm().circle().radius, 300.0);
+
+    // default wind height (5000 m)
+    std::vector<std::string> fields = algo->requiredFields();
+    EXPECT_EQUAL(fields.size(), 2);
+    EXPECT_EQUAL(fields[0], "u;hl;5000");
+    EXPECT_EQUAL(fields[1], "v;hl;5000");
+
+    // non-integral wind height
+    std::vector<std::string> fields_custom = request.areas()[1]->requiredFields();
+    EXPECT_EQUAL(fields_custom[0], "u;hl;850.5");
+    EXPECT_EQUAL(fields_custom[1], "v;hl;850.5");
+}
+
+
 CASE("test invalid circle requests") {
 
     std::vector<std::string> invalid_extractions = {
@@ -148,6 +186,21 @@ CASE("test invalid circle requests") {
                                                    {"step": 0, "lat": 16.0, "lon": 131.0, "radius": 100}]}})",
         // invalid track point
         R"({"type": "circle", "track": {"points": [{"step": 0, "lat": 15.0, "lon": 130.0, "radius": -1}]}})",
+        // algorithm not a dictionary
+        R"({"type": "circle", "algorithm": "wind-advection"})",
+        // algorithm without name
+        R"({"type": "circle", "algorithm": {"lat": 15.0, "lon": 130.0, "radius": 300}})",
+        // unknown algorithm
+        R"({"type": "circle", "algorithm": {"name": "teleport", "lat": 15.0, "lon": 130.0, "radius": 300}})",
+        // algorithm combined with flat keys or track
+        R"({"type": "circle", "radius": 300, "algorithm": {"name": "wind-advection", "lat": 15.0, "lon": 130.0, "radius": 300}})",
+        R"({"type": "circle", "algorithm": {"name": "wind-advection", "lat": 15.0, "lon": 130.0, "radius": 300},
+            "track": {"points": [{"step": 0, "lat": 15.0, "lon": 130.0, "radius": 100}]}})",
+        // wind-advection: missing keys, invalid circle, invalid wind height
+        R"({"type": "circle", "algorithm": {"name": "wind-advection", "lat": 15.0, "lon": 130.0}})",
+        R"({"type": "circle", "algorithm": {"name": "wind-advection", "lat": 95.0, "lon": 130.0, "radius": 300}})",
+        R"({"type": "circle", "algorithm": {"name": "wind-advection", "lat": 15.0, "lon": 130.0, "radius": 0}})",
+        R"({"type": "circle", "algorithm": {"name": "wind-advection", "lat": 15.0, "lon": 130.0, "radius": 300, "wind_height": 0}})",
     };
 
     for (const auto& extraction : invalid_extractions) {

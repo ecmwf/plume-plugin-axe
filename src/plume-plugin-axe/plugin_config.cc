@@ -10,6 +10,8 @@
  * does it submit to any jurisdiction.
  */
 
+#include <algorithm>
+
 #include "eckit/log/Log.h"
 #include "eckit/config/LocalConfiguration.h"
 
@@ -43,6 +45,12 @@ PluginConfig::PluginConfig(const eckit::Configuration& conf, const std::vector<s
 
         for (const auto& area : requests_.back().areas()) {
             hasTimeDependentAreas_ = hasTimeDependentAreas_ || area->isTimeDependent();
+            requiresTimeStep_ = requiresTimeStep_ || area->requiresTimeStep();
+            for (const auto& field : area->requiredFields()) {
+                if (std::find(requiredFields_.begin(), requiredFields_.end(), field) == requiredFields_.end()) {
+                    requiredFields_.push_back(field);
+                }
+            }
         }
 
         // map user->uid (NB: only one request entry per user admitted)

@@ -10,6 +10,8 @@
  */
 #pragma once
 
+#include <map>
+#include <optional>
 #include <vector>
 #include <string>
 
@@ -41,6 +43,9 @@ public:
 
     // update data
     void updateData(ExtractedData& data);
+
+    // update the areas computed at runtime (collective over MPI ranks)
+    void updateAreas(const PluginConfig& config, int step, std::optional<double> tstep);
 
 private:
 

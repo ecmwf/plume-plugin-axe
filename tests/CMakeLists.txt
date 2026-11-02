@@ -27,6 +27,7 @@ foreach(prec_def ${PLUGINS_DEFINITIONS})
                       LIBS
                         ${PLUGIN_AXE_LIB_NAME}
                         eckit
+                        atlas
                         plume_plugin
     )
 
@@ -60,6 +61,8 @@ foreach(prec_def ${PLUGINS_DEFINITIONS})
                       LIBS
                         ${PLUGIN_AXE_LIB_NAME}
                         eckit
+                        atlas
+                        plume_plugin
     )
 
 endforeach()

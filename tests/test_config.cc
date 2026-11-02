@@ -101,6 +101,60 @@ CASE("test time-dependent areas flag") {
 }
 
 
+CASE("test runtime area requirements") {
+
+    // no runtime areas
+    std::string conf_static_str(R"YAML({
+        "writer": "CovJSON",
+        "requests": [
+            {
+                "user": "user11",
+                "extractions": [
+                    {"north": 50, "south": 4, "east": 75, "west": 14},
+                    {"type": "circle", "lat": 15.0, "lon": 130.0, "radius": 300}
+                ]
+            }
+        ]
+    })YAML");
+    eckit::YAMLConfiguration conf_static(conf_static_str);
+    PluginConfig config_static(conf_static, {"param1"});
+    EXPECT(config_static.requiredFields().empty());
+    EXPECT(!config_static.requiresTimeStep());
+
+    // runtime areas (fields aggregated without duplicates)
+    std::string conf_algo_str(R"YAML({
+        "writer": "CovJSON",
+        "requests": [
+            {
+                "user": "user11",
+                "extractions": [
+                    {"north": 50, "south": 4, "east": 75, "west": 14},
+                    {"type": "circle", "algorithm": {"name": "wind-advection", "lat": 15.0, "lon": 130.0, "radius": 300}}
+                ]
+            },
+            {
+                "user": "user22",
+                "extractions": [
+                    {"type": "circle", "algorithm": {"name": "wind-advection", "lat": 20.0, "lon": 140.0, "radius": 300}},
+                    {"type": "circle", "algorithm": {"name": "wind-advection", "lat": 20.0, "lon": 140.0, "radius": 300, "wind_height": 70}}
+                ]
+            }
+        ]
+    })YAML");
+    eckit::YAMLConfiguration conf_algo(conf_algo_str);
+    PluginConfig config_algo(conf_algo, {"param1"});
+    EXPECT(config_algo.hasTimeDependentAreas());
+    EXPECT(config_algo.requiresTimeStep());
+
+    const auto& fields = config_algo.requiredFields();
+    EXPECT_EQUAL(fields.size(), 4);
+    EXPECT_EQUAL(fields[0], "u;hl;5000");
+    EXPECT_EQUAL(fields[1], "v;hl;5000");
+    EXPECT_EQUAL(fields[2], "u;hl;70");
+    EXPECT_EQUAL(fields[3], "v;hl;70");
+}
+
+
 CASE("test invalid config") {
 
     // config with invalid request type

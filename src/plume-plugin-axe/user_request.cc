@@ -15,6 +15,8 @@
 
 #include "eckit/exception/Exceptions.h"
 
+#include "geo_utils.h"
+#include "circle_algorithm.h"
 #include "user_request.h"
 
 
@@ -26,15 +28,6 @@ std::string errorPrefix(const std::string& user, size_t area_idx) {
     std::stringstream ss;
     ss << "UserRequest (user: " << user << ", extraction: " << area_idx << "): ";
     return ss.str();
-}
-
-void checkCircle(const std::string& prefix, double lat, double radius) {
-    if (lat < -90.0 || lat > 90.0) {
-        throw eckit::UserError(prefix + "circle latitude must be in [-90, 90]", Here());
-    }
-    if (!(radius > 0.0)) {
-        throw eckit::UserError(prefix + "circle radius must be > 0 [km]", Here());
-    }
 }
 
 } // namespace
@@ -88,7 +81,37 @@ void UserRequest::add_circle(const eckit::Configuration& extraction) {
     int area_idx = areas_.size();
     std::string prefix = errorPrefix(user_, area_idx);
 
-    if (extraction.has("track")) {
+    if (extraction.has("algorithm")) {
+
+        // circle computed at runtime by an algorithm
+        if (extraction.has("track") || extraction.has("lat") || extraction.has("lon") || extraction.has("radius")) {
+            throw eckit::UserError(prefix + "'algorithm' cannot be combined with 'track', 'lat', 'lon' or 'radius'", Here());
+        }
+
+        if (!extraction.isSubConfiguration("algorithm")) {
+            throw eckit::UserError(prefix + "'algorithm' must be a dictionary", Here());
+        }
+        eckit::LocalConfiguration algorithm = extraction.getSubConfiguration("algorithm");
+
+        if (!algorithm.has("name")) {
+            throw eckit::UserError(prefix + "'algorithm' requires a 'name'", Here());
+        }
+        std::string name = algorithm.getString("name");
+
+        if (!CircleAlgorithmFactory::instance().has(name)) {
+            throw eckit::UserError(prefix + "unknown circle algorithm '" + name + "'", Here());
+        }
+
+        std::shared_ptr<CircleAlgorithm> circleAlgorithm;
+        try {
+            circleAlgorithm = CircleAlgorithmFactory::instance().build(name, algorithm);
+        } catch (eckit::UserError& e) {
+            throw eckit::UserError(prefix + e.what(), Here());
+        }
+
+        areas_.push_back(std::make_shared<const AlgorithmCircle>(area_idx, std::move(circleAlgorithm)));
+
+    } else if (extraction.has("track")) {
 
         // time-dependent circle
         if (extraction.has("lat") || extraction.has("lon") || extraction.has("radius")) {
