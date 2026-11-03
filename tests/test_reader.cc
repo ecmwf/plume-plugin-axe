@@ -28,6 +28,7 @@
 #include "plume/data/FieldAccess.h"
 
 
+#include "area.h"
 #include "circle_algorithm.h"
 #include "data_reader.h"
 #include "extracted_data.h"
@@ -216,7 +217,7 @@ CASE("test reader - wind-advected circle") {
                 "tag": "tc",
                 "extractions": [
                     {"type": "circle", "algorithm": {"name": "wind-advected", "lat": 0.0, "lon": 0.0, "radius": 1500}},
-                    {"type": "circle", "algorithm": {"name": "wind-advected", "lat": 0.0, "lon": 0.0, "radius": 1},
+                    {"type": "circle", "algorithm": {"name": "wind-advected", "lat": 0.0, "lon": 0.0, "radius": 1}},
                     {"type": "circle", "algorithm": {"name": "wind-advected", "lat": 0.0, "lon": 0.0,
                                                      "radius": {"start": 1000, "end": 2000, "time-interval": 24}}}
                 ]
@@ -311,6 +312,94 @@ CASE("test reader - wind-advected circle") {
     EXPECT_EQUAL(algorithmOf(2).circle().radius, 2000.0);
     std::unique_ptr<ExtractedData> data30(reader.extractData(plugin_config, 30));
     EXPECT(lons_of_area(*data30, 2).size() >= nPoints10);
+}
+
+
+CASE("test reader - wind-advected circle with inner radius") {
+
+    std::string conf_str(R"YAML({
+        "writer": "CSV",
+        "requests": [
+            {
+                "user": "user11",
+                "tag": "tc",
+                "extractions": [
+                    {"type": "circle", "algorithm": {"name": "wind-advected", "lat": 0.0, "lon": 0.0, "radius": 1500}},
+                    {"type": "circle", "algorithm": {"name": "wind-advected", "lat": 0.0, "lon": 0.0, "radius": 1500, "inner_radius": 800}},
+                    {"type": "circle", "algorithm": {"name": "wind-advected", "lat": 0.0, "lon": 0.0, "radius": 1500, "inner_radius": 2000}}
+                ]
+            }
+        ]
+    })YAML");
+    eckit::YAMLConfiguration conf(conf_str);
+
+    // eastward wind: 50 m/s within 800 km of (0, 0), 10 m/s elsewhere
+    // (O8 points nearest to (0, 0): 2 at ~606 km, 4 at ~1030 km, next at ~1772 km)
+    const double uInner = 50.0;
+    const double uOuter = 10.0;
+    const double innerRadius = 800.0;
+    const double tstep = 3600.0;
+    std::vector<std::string> params = {"u;hl;5000", "v;hl;5000"};
+    std::vector<plume::data::FieldView> fields;
+
+    atlas::Grid grid("O8");
+    atlas::util::Config grid_config;
+    grid_config.set("halo", 0);
+    grid_config.set("levels", 1);
+    grid_config.set("periodic_points", true);
+    atlas::functionspace::StructuredColumns fs(grid, atlas::grid::Partitioner("equal_regions"), grid_config);
+    atlas::Field lonlats = fs.lonlat();
+    auto lonLatArray = atlas::array::make_view<const double,2>(lonlats);
+    for (const auto& param : params) {
+        atlas::Field field = fs.createField<FIELD_TYPE_REAL>(atlas::option::name(param));
+        auto view = atlas::array::make_view<FIELD_TYPE_REAL,2>(field);
+        for (atlas::idx_t j = 0; j < view.shape(0); j++) {
+            bool inner = greatCircleDistanceKm(lonLatArray(j, 1), lonLatArray(j, 0), 0.0, 0.0) <= innerRadius;
+            view(j, 0) = (param[0] == 'u') ? (inner ? uInner : uOuter) : 0.0;
+        }
+        fields.push_back(plume::data::FieldView(field));
+    }
+
+    DataReader reader(fields);
+    PluginConfig plugin_config(conf, params);
+
+    auto algorithmOf = [&](int iArea) -> const WindAdvectionAlgorithm& {
+        auto area = std::dynamic_pointer_cast<const AlgorithmCircle>(plugin_config.requests()[0].areas()[iArea]);
+        EXPECT(area);
+        auto algorithm = dynamic_cast<const WindAdvectionAlgorithm*>(&area->algorithm());
+        EXPECT(algorithm);
+        return *algorithm;
+    };
+
+    auto points_of_area = [](const ExtractedData& data, int iArea) {
+        return data.find({.user="user11", .areaIdx=iArea}).size();
+    };
+
+    EXPECT(!algorithmOf(0).innerRadius().has_value());
+    EXPECT_EQUAL(*algorithmOf(1).innerRadius(), innerRadius);
+
+    // the inner radius does not change the extracted points
+    reader.updateAreas(plugin_config, 0, tstep);
+    std::unique_ptr<ExtractedData> data0(reader.extractData(plugin_config, 0));
+    EXPECT(points_of_area(*data0, 0) > 0);
+    EXPECT_EQUAL(points_of_area(*data0, 1), points_of_area(*data0, 0));
+    EXPECT_EQUAL(points_of_area(*data0, 2), points_of_area(*data0, 0));
+
+    reader.updateAreas(plugin_config, 1, tstep);
+    double lonFull = algorithmOf(0).circle().lon;
+    double lonAnnulus = algorithmOf(1).circle().lon;
+    double lonIgnored = algorithmOf(2).circle().lon;
+
+    // annulus: moved by the outer wind only
+    double expectedAnnulus = uOuter * tstep / (EARTH_RADIUS_KM * 1000.0) * RAD_TO_DEG;
+    EXPECT(std::abs(lonAnnulus - expectedAnnulus) < 1e-6);
+
+    // full circle: the inner wind also contributes
+    std::cout << "lonFull: " << lonFull << ", lonAnnulus: " << lonAnnulus << std::endl;
+    EXPECT(lonFull > lonAnnulus + 1e-4);
+
+    // inner radius larger than the radius: ignored
+    EXPECT_EQUAL(lonIgnored, lonFull);
 }
 
 

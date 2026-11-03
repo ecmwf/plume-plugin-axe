@@ -120,6 +120,9 @@ public:
     // radius schedule (constant radius: start == end)
     const RadiusSchedule& radiusSchedule() const { return radius_; }
 
+    // radius [km] around the centre excluded from the mean wind (unset: none)
+    const std::optional<double>& innerRadius() const { return innerRadius_; }
+
     // the current circle, at any step
     std::optional<Circle> circleAt(int /*step*/) const override { return circle_; }
 
@@ -138,6 +141,8 @@ private:
     Circle circle_;
 
     RadiusSchedule radius_;
+
+    std::optional<double> innerRadius_;
 
     double windHeight_;
 

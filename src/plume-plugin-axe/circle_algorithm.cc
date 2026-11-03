@@ -132,6 +132,17 @@ WindAdvectionAlgorithm::WindAdvectionAlgorithm(const eckit::Configuration& confi
     circle_ = Circle{config.getDouble("lat"), config.getDouble("lon"), radius_.start};
     checkCircle(prefix, circle_.lat, circle_.radius);
 
+    // points closer than inner_radius to the centre do not contribute to the mean wind
+    if (config.has("inner_radius")) {
+        if (!config.isFloatingPoint("inner_radius") && !config.isIntegral("inner_radius")) {
+            throw eckit::UserError(prefix + "'inner_radius' must be a number", Here());
+        }
+        innerRadius_ = config.getDouble("inner_radius");
+        if (!(*innerRadius_ > 0.0)) {
+            throw eckit::UserError(prefix + "'inner_radius' must be > 0 [km]", Here());
+        }
+    }
+
     windHeight_ = config.getDouble("wind_height", 5000.0);
     if (!(windHeight_ > 0.0)) {
         throw eckit::UserError(prefix + "'wind_height' must be > 0 [m]", Here());
@@ -173,7 +184,20 @@ void WindAdvectionAlgorithm::update(const AreaUpdateContext& ctx) {
     atlas::Field ghost = ctx.functionspace.ghost();
     auto ghostArray = atlas::array::make_view<int,1>(ghost);
 
-    // local sums of u, v and number of points inside the current circle
+    // inner radius in use (negative: none, so that a point at the centre contributes),
+    // ignored if not smaller than the current radius
+    double innerRadius = -1.0;
+    if (innerRadius_) {
+        if (*innerRadius_ < circle_.radius) {
+            innerRadius = *innerRadius_;
+        } else if (eckit::mpi::comm().rank() == 0) {
+            eckit::Log::warning() << "WindAdvectionAlgorithm: inner_radius " << *innerRadius_
+                                  << " >= radius " << circle_.radius << " at step " << ctx.step
+                                  << " => inner_radius ignored" << std::endl;
+        }
+    }
+
+    // local sums of u, v and number of points contributing to the mean wind
     double sums[3] = {0.0, 0.0, 0.0};
     for (int iPt = 0; iPt < lonLatArray.shape(0); iPt++) {
 
@@ -189,7 +213,8 @@ void WindAdvectionAlgorithm::update(const AreaUpdateContext& ctx) {
             continue;
         }
 
-        if (greatCircleDistanceKm(pointLat, pointLon, circle_.lat, circle_.lon) <= circle_.radius) {
+        double distance = greatCircleDistanceKm(pointLat, pointLon, circle_.lat, circle_.lon);
+        if (distance <= circle_.radius && distance > innerRadius) {
             sums[0] += uArray(iPt, 0);
             sums[1] += vArray(iPt, 0);
             sums[2] += 1.0;
@@ -200,7 +225,7 @@ void WindAdvectionAlgorithm::update(const AreaUpdateContext& ctx) {
     eckit::mpi::comm().allReduceInPlace(sums, 3, eckit::mpi::sum());
 
     if (sums[2] == 0.0) {
-        eckit::Log::warning() << "WindAdvectionAlgorithm: no grid points inside the circle at step "
+        eckit::Log::warning() << "WindAdvectionAlgorithm: no grid points contributing to the mean wind at step "
                               << ctx.step << " => circle not moved" << std::endl;
     } else {
         double uMean = sums[0] / sums[2];
@@ -226,6 +251,9 @@ void WindAdvectionAlgorithm::print(std::ostream& ss) const {
     ss << type() << ":(lat:" << circle_.lat << ",";
     ss << "lon:" << circle_.lon << ",";
     ss << "radius:" << circle_.radius << ",";
+    if (innerRadius_) {
+        ss << "inner_radius:" << *innerRadius_ << ",";
+    }
     if (radius_.start != radius_.end) {
         ss << "radius-schedule:" << radius_.start << "->" << radius_.end << "/" << radius_.intervalHours << "h,";
     }

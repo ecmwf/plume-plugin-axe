@@ -183,6 +183,27 @@ CASE("test algorithm circle request") {
     EXPECT_EQUAL(growing->radiusSchedule().start, 100.0);
     EXPECT_EQUAL(growing->radiusSchedule().end, 300.5);
     EXPECT_EQUAL(growing->radiusSchedule().intervalHours, 24.0);
+    EXPECT(!growing->innerRadius().has_value());
+
+    // inner radius (larger than the radius is accepted: it is checked at runtime)
+    std::string inner_str(R"YAML({
+        "user": "user11",
+        "extractions": [
+            {"type": "circle", "algorithm": {"name": "wind-advected", "lat": 15.0, "lon": 130.0, "radius": 300, "inner_radius": 50}},
+            {"type": "circle", "algorithm": {"name": "wind-advected", "lat": 15.0, "lon": 130.0, "radius": 300, "inner_radius": 500.5}}
+        ]
+    })YAML");
+    eckit::YAMLConfiguration inner_conf(inner_str);
+    area_extractor::UserRequest inner_request(inner_conf);
+    for (size_t i = 0; i < 2; i++) {
+        auto area = std::dynamic_pointer_cast<const AlgorithmCircle>(inner_request.areas()[i]);
+        EXPECT(area);
+        auto inner = dynamic_cast<const area_extractor::WindAdvectionAlgorithm*>(&area->algorithm());
+        EXPECT(inner);
+        EXPECT(inner->innerRadius().has_value());
+        double expected = (i == 0) ? 50.0 : 500.5;
+        EXPECT_EQUAL(*inner->innerRadius(), expected);
+    }
 }
 
 
@@ -239,6 +260,10 @@ CASE("test invalid circle requests") {
         R"({"type": "circle", "algorithm": {"name": "wind-advected", "lat": 15.0, "lon": 130.0, "radius": {"start": 100, "end": 300, "time-interval": "24"}}})",
         R"({"type": "circle", "algorithm": {"name": "wind-advected", "lat": 15.0, "lon": 130.0, "radius": [100, 300]}})",
         R"({"type": "circle", "algorithm": {"name": "wind-advected", "lat": 15.0, "lon": 130.0, "radius": "300"}})",
+        // wind-advected: invalid inner radius
+        R"({"type": "circle", "algorithm": {"name": "wind-advected", "lat": 15.0, "lon": 130.0, "radius": 300, "inner_radius": 0}})",
+        R"({"type": "circle", "algorithm": {"name": "wind-advected", "lat": 15.0, "lon": 130.0, "radius": 300, "inner_radius": -10}})",
+        R"({"type": "circle", "algorithm": {"name": "wind-advected", "lat": 15.0, "lon": 130.0, "radius": 300, "inner_radius": "50"}})",
     };
 
     for (const auto& extraction : invalid_extractions) {
