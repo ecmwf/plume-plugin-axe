@@ -112,6 +112,7 @@ Each entry is one of the following shapes (shapes can be mixed in the same reque
       - a number [km]: a constant radius;
       - a dictionary `{"start": 100, "end": 300, "time-interval": 24}`: the radius grows linearly from `start` to `end` [km] over `time-interval` [h], measured from the plugin's first executed step, and then stays at `end`. All three values must be numbers > 0 (`end < start` shrinks the circle).
       - `inner_radius` (optional, number > 0 [km]): grid points closer than `inner_radius` to the current centre do not contribute to the mean wind (they are still extracted). If `inner_radius` is not smaller than the current radius, a warning is logged and it is ignored at that step.
+      - `pmin-track` (optional, `true`/`false`, default `true`): after the centre has been moved by the wind (and the radius updated), the centre is reset to the grid point with the minimum surface pressure (`lnsp`) inside the moved circle, before extraction. Not applied at the first executed step. When enabled, `{"name": "lnsp", "type": "ATLAS_FIELD"}` must be listed in `"parameters"`.
       - At each executed step, the centre is moved by the mean wind inside the circle (`u` and `v` interpolated at `wind_height` metres, default 5000) times the time elapsed since the previous executed step (`TSTEP` × elapsed steps). Points are then extracted inside the moved circle.
       - The plugin `"parameters"` must request the wind fields and `TSTEP`, e.g.:
         ```json

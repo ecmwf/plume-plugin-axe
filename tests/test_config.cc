@@ -121,7 +121,7 @@ CASE("test runtime area requirements") {
     EXPECT(config_static.requiredFields().empty());
     EXPECT(!config_static.requiresTimeStep());
 
-    // runtime areas (fields aggregated without duplicates)
+    // runtime areas (fields aggregated without duplicates; lnsp required by the default pmin-track)
     std::string conf_algo_str(R"YAML({
         "writer": "CovJSON",
         "requests": [
@@ -147,11 +147,12 @@ CASE("test runtime area requirements") {
     EXPECT(config_algo.requiresTimeStep());
 
     const auto& fields = config_algo.requiredFields();
-    EXPECT_EQUAL(fields.size(), 4);
+    EXPECT_EQUAL(fields.size(), 5);
     EXPECT_EQUAL(fields[0], "u;hl;5000");
     EXPECT_EQUAL(fields[1], "v;hl;5000");
-    EXPECT_EQUAL(fields[2], "u;hl;70");
-    EXPECT_EQUAL(fields[3], "v;hl;70");
+    EXPECT_EQUAL(fields[2], "lnsp");
+    EXPECT_EQUAL(fields[3], "u;hl;70");
+    EXPECT_EQUAL(fields[4], "v;hl;70");
 }
 
 

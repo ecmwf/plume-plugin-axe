@@ -10,7 +10,9 @@
  */
 
 #include <algorithm>
+#include <array>
 #include <cmath>
+#include <limits>
 #include <sstream>
 
 #include "eckit/exception/Exceptions.h"
@@ -47,6 +49,69 @@ const plume::data::FieldView& findField(const AreaUpdateContext& ctx, const std:
         throw eckit::UserError("CircleAlgorithm: required field '" + name + "' not available", Here());
     }
     return it->second;
+}
+
+// surface pressure field used by the pmin-track correction
+const std::string PMIN_FIELD_NAME = "lnsp";
+
+// grid point with the minimum value of a field (level 0) inside a circle, over all ranks (collective):
+// {lat, lon, value}, or nullopt if there are no grid points inside the circle.
+// Ties: lowest rank, then first point in local order.
+std::optional<std::array<double, 3>> findFieldMinimum(const atlas::FunctionSpace& functionspace,
+                                                      const plume::data::FieldView& field,
+                                                      const Circle& circle) {
+
+    auto fieldArray = atlas::array::make_view<const FIELD_TYPE_REAL,2>(field);
+
+    atlas::Field lonlats = functionspace.lonlat();
+    auto lonLatArray = atlas::array::make_view<const double,2>(lonlats);
+
+    atlas::Field ghost = functionspace.ghost();
+    auto ghostArray = atlas::array::make_view<int,1>(ghost);
+
+    // local minimum
+    const double none = std::numeric_limits<double>::infinity();
+    std::array<double, 3> local{0.0, 0.0, none};
+    for (int iPt = 0; iPt < lonLatArray.shape(0); iPt++) {
+
+        if (ghostArray(iPt)) {
+            continue;
+        }
+
+        double pointLon = lonLatArray(iPt, 0);
+        double pointLat = lonLatArray(iPt, 1);
+
+        // cheap latitude-band pre-filter
+        if (std::abs(pointLat - circle.lat) * KM_PER_DEG_LAT > circle.radius) {
+            continue;
+        }
+
+        if (greatCircleDistanceKm(pointLat, pointLon, circle.lat, circle.lon) <= circle.radius) {
+            double value = fieldArray(iPt, 0);
+            if (value < local[2]) {
+                local = {pointLat, pointLon, value};
+            }
+        }
+    }
+
+    // rank holding the global minimum (collective)
+    const auto& comm = eckit::mpi::comm();
+    std::vector<double> minima(comm.size());
+    comm.allGather(local[2], minima.begin(), minima.end());
+
+    size_t root = 0;
+    for (size_t iRank = 1; iRank < minima.size(); iRank++) {
+        if (minima[iRank] < minima[root]) {
+            root = iRank;
+        }
+    }
+    if (minima[root] == none) {
+        return std::nullopt;
+    }
+
+    // location of the minimum from that rank (collective)
+    comm.broadcast(local.data(), local.size(), root);
+    return local;
 }
 
 } // namespace
@@ -143,6 +208,11 @@ WindAdvectionAlgorithm::WindAdvectionAlgorithm(const eckit::Configuration& confi
         }
     }
 
+    if (config.has("pmin-track") && !config.isBoolean("pmin-track")) {
+        throw eckit::UserError(prefix + "'pmin-track' must be true or false", Here());
+    }
+    pminTrack_ = config.getBool("pmin-track", true);
+
     windHeight_ = config.getDouble("wind_height", 5000.0);
     if (!(windHeight_ > 0.0)) {
         throw eckit::UserError(prefix + "'wind_height' must be > 0 [m]", Here());
@@ -154,6 +224,15 @@ WindAdvectionAlgorithm::WindAdvectionAlgorithm(const eckit::Configuration& confi
 
 
 WindAdvectionAlgorithm::~WindAdvectionAlgorithm() {
+}
+
+
+std::vector<std::string> WindAdvectionAlgorithm::requiredFields() const {
+    std::vector<std::string> fields{uName_, vName_};
+    if (pminTrack_) {
+        fields.push_back(PMIN_FIELD_NAME);
+    }
+    return fields;
 }
 
 
@@ -244,6 +323,23 @@ void WindAdvectionAlgorithm::update(const AreaUpdateContext& ctx) {
                            << " circle centre (lat:" << circle_.lat << ", lon:" << circle_.lon << ")"
                            << " radius:" << circle_.radius << std::endl;
     }
+
+    // correction: reset the centre to the surface pressure minimum inside the advected circle
+    if (pminTrack_) {
+        auto minimum = findFieldMinimum(ctx.functionspace, findField(ctx, PMIN_FIELD_NAME), circle_);
+        if (!minimum) {
+            eckit::Log::warning() << "WindAdvectionAlgorithm: pmin-track: no grid points inside the circle at step "
+                                  << ctx.step << " => centre not corrected" << std::endl;
+        } else {
+            circle_.lat = (*minimum)[0];
+            circle_.lon = wrapLon((*minimum)[1]);
+            if (eckit::mpi::comm().rank() == 0) {
+                eckit::Log::info() << "WindAdvectionAlgorithm: step " << ctx.step
+                                   << " pmin-track: circle centre (lat:" << circle_.lat << ", lon:" << circle_.lon << ")"
+                                   << " " << PMIN_FIELD_NAME << ":" << (*minimum)[2] << std::endl;
+            }
+        }
+    }
 }
 
 
@@ -257,6 +353,7 @@ void WindAdvectionAlgorithm::print(std::ostream& ss) const {
     if (radius_.start != radius_.end) {
         ss << "radius-schedule:" << radius_.start << "->" << radius_.end << "/" << radius_.intervalHours << "h,";
     }
+    ss << "pmin-track:" << (pminTrack_ ? "true" : "false") << ",";
     ss << "wind:" << uName_ << "/" << vName_ << ")";
 }
 

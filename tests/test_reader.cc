@@ -216,10 +216,10 @@ CASE("test reader - wind-advected circle") {
                 "user": "user11",
                 "tag": "tc",
                 "extractions": [
-                    {"type": "circle", "algorithm": {"name": "wind-advected", "lat": 0.0, "lon": 0.0, "radius": 1500}},
-                    {"type": "circle", "algorithm": {"name": "wind-advected", "lat": 0.0, "lon": 0.0, "radius": 1}},
+                    {"type": "circle", "algorithm": {"name": "wind-advected", "lat": 0.0, "lon": 0.0, "radius": 1500, "pmin-track": false}},
+                    {"type": "circle", "algorithm": {"name": "wind-advected", "lat": 0.0, "lon": 0.0, "radius": 1, "pmin-track": false}},
                     {"type": "circle", "algorithm": {"name": "wind-advected", "lat": 0.0, "lon": 0.0,
-                                                     "radius": {"start": 1000, "end": 2000, "time-interval": 24}}}
+                                                     "radius": {"start": 1000, "end": 2000, "time-interval": 24}, "pmin-track": false}}
                 ]
             }
         ]
@@ -324,9 +324,9 @@ CASE("test reader - wind-advected circle with inner radius") {
                 "user": "user11",
                 "tag": "tc",
                 "extractions": [
-                    {"type": "circle", "algorithm": {"name": "wind-advected", "lat": 0.0, "lon": 0.0, "radius": 1500}},
-                    {"type": "circle", "algorithm": {"name": "wind-advected", "lat": 0.0, "lon": 0.0, "radius": 1500, "inner_radius": 800}},
-                    {"type": "circle", "algorithm": {"name": "wind-advected", "lat": 0.0, "lon": 0.0, "radius": 1500, "inner_radius": 2000}}
+                    {"type": "circle", "algorithm": {"name": "wind-advected", "lat": 0.0, "lon": 0.0, "radius": 1500, "pmin-track": false}},
+                    {"type": "circle", "algorithm": {"name": "wind-advected", "lat": 0.0, "lon": 0.0, "radius": 1500, "inner_radius": 800, "pmin-track": false}},
+                    {"type": "circle", "algorithm": {"name": "wind-advected", "lat": 0.0, "lon": 0.0, "radius": 1500, "inner_radius": 2000, "pmin-track": false}}
                 ]
             }
         ]
@@ -400,6 +400,97 @@ CASE("test reader - wind-advected circle with inner radius") {
 
     // inner radius larger than the radius: ignored
     EXPECT_EQUAL(lonIgnored, lonFull);
+}
+
+
+CASE("test reader - wind-advected circle with pmin-track") {
+
+    std::string conf_str(R"YAML({
+        "writer": "CSV",
+        "requests": [
+            {
+                "user": "user11",
+                "tag": "tc",
+                "extractions": [
+                    {"type": "circle", "algorithm": {"name": "wind-advected", "lat": 0.0, "lon": 0.0, "radius": 1500}},
+                    {"type": "circle", "algorithm": {"name": "wind-advected", "lat": 0.0, "lon": 0.0, "radius": 1500, "pmin-track": false}},
+                    {"type": "circle", "algorithm": {"name": "wind-advected", "lat": 0.0, "lon": 0.0, "radius": 1}}
+                ]
+            }
+        ]
+    })YAML");
+    eckit::YAMLConfiguration conf(conf_str);
+
+    // uniform eastward wind of 50 m/s; lnsp increasing with the distance from (5, 7.5):
+    // the minimum is the O8 grid point nearest to it, (~5.6, 7.5)
+    const double uWind = 50.0;
+    const double tstep = 3600.0;
+    const double targetLat = 5.0;
+    const double targetLon = 7.5;
+    std::vector<std::string> params = {"u;hl;5000", "v;hl;5000", "lnsp"};
+    std::vector<plume::data::FieldView> fields;
+
+    atlas::Grid grid("O8");
+    atlas::util::Config grid_config;
+    grid_config.set("halo", 0);
+    grid_config.set("levels", 1);
+    grid_config.set("periodic_points", true);
+    atlas::functionspace::StructuredColumns fs(grid, atlas::grid::Partitioner("equal_regions"), grid_config);
+    atlas::Field lonlats = fs.lonlat();
+    auto lonLatArray = atlas::array::make_view<const double,2>(lonlats);
+    for (const auto& param : params) {
+        atlas::Field field = fs.createField<FIELD_TYPE_REAL>(atlas::option::name(param));
+        auto view = atlas::array::make_view<FIELD_TYPE_REAL,2>(field);
+        for (atlas::idx_t j = 0; j < view.shape(0); j++) {
+            if (param == "lnsp") {
+                view(j, 0) = 11.0 + greatCircleDistanceKm(lonLatArray(j, 1), lonLatArray(j, 0), targetLat, targetLon) / 1.0e4;
+            } else {
+                view(j, 0) = (param[0] == 'u') ? uWind : 0.0;
+            }
+        }
+        fields.push_back(plume::data::FieldView(field));
+    }
+
+    DataReader reader(fields);
+    PluginConfig plugin_config(conf, params);
+
+    auto algorithmOf = [&](int iArea) -> const WindAdvectionAlgorithm& {
+        auto area = std::dynamic_pointer_cast<const AlgorithmCircle>(plugin_config.requests()[0].areas()[iArea]);
+        EXPECT(area);
+        auto algorithm = dynamic_cast<const WindAdvectionAlgorithm*>(&area->algorithm());
+        EXPECT(algorithm);
+        return *algorithm;
+    };
+
+    // first step: no correction
+    reader.updateAreas(plugin_config, 0, tstep);
+    EXPECT_EQUAL(algorithmOf(0).circle().lat, 0.0);
+    EXPECT_EQUAL(algorithmOf(0).circle().lon, 0.0);
+
+    // next step: advected, then reset to the lnsp minimum
+    reader.updateAreas(plugin_config, 1, tstep);
+    EXPECT(std::abs(algorithmOf(0).circle().lon - targetLon) < 1e-9);
+    EXPECT(std::abs(algorithmOf(0).circle().lat - targetLat) < 1.0);
+    EXPECT(algorithmOf(0).circle().lat > 0.0);
+    EXPECT_EQUAL(algorithmOf(0).circle().radius, 1500.0);
+
+    // pmin-track disabled: pure advection
+    double expectedLon = uWind * tstep / (EARTH_RADIUS_KM * 1000.0) * RAD_TO_DEG;
+    EXPECT(std::abs(algorithmOf(1).circle().lon - expectedLon) < 1e-6);
+    EXPECT(std::abs(algorithmOf(1).circle().lat) < 1e-9);
+
+    // no grid points in the circle: not moved, not corrected
+    EXPECT_EQUAL(algorithmOf(2).circle().lat, 0.0);
+    EXPECT_EQUAL(algorithmOf(2).circle().lon, 0.0);
+
+    // the extracted points follow the corrected centre
+    std::unique_ptr<ExtractedData> data1(reader.extractData(plugin_config, 1));
+    const Circle& corrected = algorithmOf(0).circle();
+    auto points = data1->find({.user="user11", .areaIdx=0});
+    EXPECT(!points.empty());
+    for (int i : points) {
+        EXPECT(greatCircleDistanceKm(data1->get_lat(i), data1->get_lon(i), corrected.lat, corrected.lon) <= corrected.radius);
+    }
 }
 
 

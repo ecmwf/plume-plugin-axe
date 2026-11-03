@@ -163,11 +163,13 @@ CASE("test algorithm circle request") {
     EXPECT_EQUAL(wind->radiusSchedule().start, 300.0);
     EXPECT_EQUAL(wind->radiusSchedule().end, 300.0);
 
-    // default wind height (5000 m)
+    // default wind height (5000 m), default pmin-track (lnsp required)
+    EXPECT(wind->pminTrack());
     std::vector<std::string> fields = algo->requiredFields();
-    EXPECT_EQUAL(fields.size(), 2);
+    EXPECT_EQUAL(fields.size(), 3);
     EXPECT_EQUAL(fields[0], "u;hl;5000");
     EXPECT_EQUAL(fields[1], "v;hl;5000");
+    EXPECT_EQUAL(fields[2], "lnsp");
 
     // non-integral wind height
     std::vector<std::string> fields_custom = request.areas()[1]->requiredFields();
@@ -190,7 +192,8 @@ CASE("test algorithm circle request") {
         "user": "user11",
         "extractions": [
             {"type": "circle", "algorithm": {"name": "wind-advected", "lat": 15.0, "lon": 130.0, "radius": 300, "inner_radius": 50}},
-            {"type": "circle", "algorithm": {"name": "wind-advected", "lat": 15.0, "lon": 130.0, "radius": 300, "inner_radius": 500.5}}
+            {"type": "circle", "algorithm": {"name": "wind-advected", "lat": 15.0, "lon": 130.0, "radius": 300, "inner_radius": 500.5}},
+            {"type": "circle", "algorithm": {"name": "wind-advected", "lat": 15.0, "lon": 130.0, "radius": 300, "pmin-track": false}}
         ]
     })YAML");
     eckit::YAMLConfiguration inner_conf(inner_str);
@@ -204,6 +207,14 @@ CASE("test algorithm circle request") {
         double expected = (i == 0) ? 50.0 : 500.5;
         EXPECT_EQUAL(*inner->innerRadius(), expected);
     }
+
+    // pmin-track disabled: lnsp not required
+    auto area_nopmin = std::dynamic_pointer_cast<const AlgorithmCircle>(inner_request.areas()[2]);
+    EXPECT(area_nopmin);
+    auto nopmin = dynamic_cast<const area_extractor::WindAdvectionAlgorithm*>(&area_nopmin->algorithm());
+    EXPECT(nopmin);
+    EXPECT(!nopmin->pminTrack());
+    EXPECT_EQUAL(area_nopmin->requiredFields().size(), 2);
 }
 
 
@@ -264,6 +275,9 @@ CASE("test invalid circle requests") {
         R"({"type": "circle", "algorithm": {"name": "wind-advected", "lat": 15.0, "lon": 130.0, "radius": 300, "inner_radius": 0}})",
         R"({"type": "circle", "algorithm": {"name": "wind-advected", "lat": 15.0, "lon": 130.0, "radius": 300, "inner_radius": -10}})",
         R"({"type": "circle", "algorithm": {"name": "wind-advected", "lat": 15.0, "lon": 130.0, "radius": 300, "inner_radius": "50"}})",
+        // wind-advected: invalid pmin-track
+        R"({"type": "circle", "algorithm": {"name": "wind-advected", "lat": 15.0, "lon": 130.0, "radius": 300, "pmin-track": "yes"}})",
+        R"({"type": "circle", "algorithm": {"name": "wind-advected", "lat": 15.0, "lon": 130.0, "radius": 300, "pmin-track": 1}})",
     };
 
     for (const auto& extraction : invalid_extractions) {

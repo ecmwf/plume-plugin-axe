@@ -123,12 +123,15 @@ public:
     // radius [km] around the centre excluded from the mean wind (unset: none)
     const std::optional<double>& innerRadius() const { return innerRadius_; }
 
+    // after advection, reset the centre to the minimum of the surface pressure in the circle
+    bool pminTrack() const { return pminTrack_; }
+
     // the current circle, at any step
     std::optional<Circle> circleAt(int /*step*/) const override { return circle_; }
 
     void update(const AreaUpdateContext& ctx) override;
 
-    std::vector<std::string> requiredFields() const override { return {uName_, vName_}; }
+    std::vector<std::string> requiredFields() const override;
 
     bool requiresTimeStep() const override { return true; }
 
@@ -143,6 +146,8 @@ private:
     RadiusSchedule radius_;
 
     std::optional<double> innerRadius_;
+
+    bool pminTrack_;
 
     double windHeight_;
 
