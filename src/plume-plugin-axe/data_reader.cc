@@ -19,26 +19,12 @@
 
 
 #include "plugin_types.h"
+#include "plugin_utils.h"
 #include "circle_algorithm.h"
 #include "data_reader.h"
 
 
 namespace area_extractor {
-
-namespace {
-
-// interpolated params are named "<param>;<levtype>;<level>" (e.g. "u;hl;70")
-bool isInterpolatedField(const std::string& name) {
-    return name.find(';') != std::string::npos;
-}
-
-// u, v and z are the sources of interpolation for the interpolated params
-bool isInterpolationSource(const std::string& name) {
-    return name == "u" || name == "v" || name == "z";
-}
-
-} // namespace
-
 
 DataReader::DataReader(std::vector<plume::data::FieldView> fields) :
     fields_{fields} {

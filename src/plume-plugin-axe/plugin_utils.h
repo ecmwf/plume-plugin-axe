@@ -25,6 +25,16 @@ void copy_name(char* dest, const char* src, size_t dest_size);
 // from string to char vec
 int append_string(std::vector<char>& arr, const std::string& str, int buff_len);
 
+// interpolated params are named "<param>;<levtype>;<level>" (e.g. "u;hl;70")
+inline bool isInterpolatedField(const std::string& name) {
+    return name.find(';') != std::string::npos;
+}
+
+// u, v and z are the sources of interpolation for the interpolated params
+inline bool isInterpolationSource(const std::string& name) {
+    return name == "u" || name == "v" || name == "z";
+}
+
 // simply pring a vector (for debugging)
 template<typename T>
 void printvec(const std::string& name, std::vector<T> vec) {

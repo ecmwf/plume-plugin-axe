@@ -49,6 +49,20 @@ CASE("test valid config") {
     PluginConfig config_valid(conf_valid, {"param1", "param2", "param3"});
     EXPECT(config_valid.users().size() == 2);
     EXPECT(config_valid.parameters().size() == 3);
+
+    // no interpolated params => all the params are written in the output
+    EXPECT(config_valid.outputParameters() == config_valid.parameters());
+    EXPECT(config_valid.outputParameterIdxs() == (std::vector<size_t>{0, 1, 2}));
+
+    // u, v, z without interpolated params are regular params => written in the output
+    PluginConfig config_uvz(conf_valid, {"u", "v", "z", "tcw"});
+    EXPECT(config_uvz.outputParameters() == (std::vector<std::string>{"u", "v", "z", "tcw"}));
+
+    // interpolated params => their sources of interpolation (u, v, z) are not written in the output
+    PluginConfig config_interp(conf_valid, {"z", "u", "v", "tcw", "u;hl;5000", "v;hl;5000", "lnsp"});
+    EXPECT(config_interp.parameters().size() == 7);
+    EXPECT(config_interp.outputParameters() == (std::vector<std::string>{"tcw", "u;hl;5000", "v;hl;5000", "lnsp"}));
+    EXPECT(config_interp.outputParameterIdxs() == (std::vector<size_t>{3, 4, 5, 6}));
     EXPECT(config_valid.requests().size() == 2);
     EXPECT(config_valid.outputStrategy() == "CovJSON");
 

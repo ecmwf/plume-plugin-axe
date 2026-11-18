@@ -11,6 +11,7 @@
 
 #include <fstream>
 #include <sstream>
+#include <iomanip>
 
 
 #include "data_writer_csv.h"
@@ -18,6 +19,9 @@
 
 namespace area_extractor {
 
+
+// number of decimals of the param values in the output
+static constexpr int VALUE_DECIMALS = 6;
 
 // Static instantiation of DataWriterCSV builder
 static DataWriterBuilder<DataWriterCSV> writerCSV;
@@ -36,7 +40,11 @@ void DataWriterCSV::writeData(const std::string& filename, const ExtractedData& 
     if (!data.isEmpty()) {
 
         std::ofstream outfile;
-        size_t psize = data.config().parameters().size();
+
+        // only the output params (sources of interpolation u, v, z are left out)
+        const std::vector<std::string>& paramNames = data.config().outputParameters();
+        const std::vector<size_t>& paramIdxs = data.config().outputParameterIdxs();
+        size_t psize = paramIdxs.size();
 
         try {
             outfile.open(filename_csv);
@@ -44,7 +52,7 @@ void DataWriterCSV::writeData(const std::string& filename, const ExtractedData& 
             // header 
             outfile << "user,area_idx,point_idx,lat,lon,lev,";
             for (size_t iparam=0; iparam<psize; iparam++) {
-                outfile << data.config().parameters()[iparam];
+                outfile << paramNames[iparam];
                 if (iparam != psize-1) {
                     outfile << ",";
                 }
@@ -60,13 +68,17 @@ void DataWriterCSV::writeData(const std::string& filename, const ExtractedData& 
                 outfile << data.get_lon(iPt) << ",";
                 outfile << data.get_lev(iPt) << ",";
 
+                // param values (fixed number of decimals, not applied to the columns above)
+                std::vector<FIELD_TYPE_REAL> values = data.get_values(iPt);
+                std::ostringstream values_ss;
+                values_ss << std::fixed << std::setprecision(VALUE_DECIMALS);
                 for (size_t iparam=0; iparam<psize; iparam++) {
-                    outfile << data.get_values(iPt)[iparam];
+                    values_ss << values[paramIdxs[iparam]];
                     if (iparam != psize-1) {
-                        outfile << ",";
+                        values_ss << ",";
                     }
                 }
-                outfile << std::endl;
+                outfile << values_ss.str() << std::endl;
             }
 
             outfile.close();

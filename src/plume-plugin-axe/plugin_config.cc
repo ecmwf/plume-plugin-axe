@@ -16,6 +16,7 @@
 #include "eckit/config/LocalConfiguration.h"
 
 #include "plugin_config.h"
+#include "plugin_utils.h"
 
 
 
@@ -63,6 +64,18 @@ PluginConfig::PluginConfig(const eckit::Configuration& conf, const std::vector<s
     // map param->uid
     for (int p=0; p<params_.size(); p++) {
         param_to_uid_.insert(std::make_pair(params_[p], p));
+    }
+
+    // params written in the output: u, v and z are left out if they are only there
+    // as sources of interpolation (i.e. if any interpolated param is requested)
+    bool hasInterpolated = std::any_of(params_.begin(), params_.end(),
+                                       [](const std::string& name) { return isInterpolatedField(name); });
+    for (size_t p=0; p<params_.size(); p++) {
+        if (hasInterpolated && isInterpolationSource(params_[p])) {
+            continue;
+        }
+        outputParamIdxs_.push_back(p);
+        outputParams_.push_back(params_[p]);
     }
 
     // map uid->param

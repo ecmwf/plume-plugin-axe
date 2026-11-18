@@ -22,6 +22,9 @@
 namespace area_extractor {
 
 
+// number of decimals of the param values in the output
+static constexpr int VALUE_DECIMALS = 6;
+
 // Static instantiation of DataWriterCOVJSON builder
 static DataWriterBuilder<DataWriterCOVJSON> writerJSON;
 
@@ -88,7 +91,7 @@ std::string DataWriterCOVJSON::assembleCOVJSON(const std::string& user, const st
     std::string referencing = TemplatesCOVJSON::crs_templ(indent);
 
     // parameter definitions    
-    std::string parameters = TemplatesCOVJSON::parameter_definitions(indent, data.config().parameters());
+    std::string parameters = TemplatesCOVJSON::parameter_definitions(indent, data.config().outputParameters());
 
     // main template
     std::string json = TemplatesCOVJSON::covjson_template(coverages, referencing, parameters, indent);
@@ -135,16 +138,18 @@ std::string DataWriterCOVJSON::assembleCoverages(const std::string& user, const 
         shape_ss << areaData.size();
         std::string shape{shape_ss.str()};
 
-        size_t param_size = areaData.config().parameters().size();
-        for (size_t iparam=0; iparam<param_size; iparam++) {
+        // only the output params (sources of interpolation u, v, z are left out)
+        const std::vector<size_t>& paramIdxs = areaData.config().outputParameterIdxs();
+        for (size_t iout=0; iout<paramIdxs.size(); iout++) {
 
+            size_t iparam = paramIdxs[iout];
             std::string paramName = areaData.get_param(iparam);
             std::string axisNames = "\"" + paramName + "\"";
 
             std::stringstream values_ss;
             for (size_t ival=0; ival<areaData.get_param_values(iparam).size(); ival++) {
                 if (!ival) values_ss << "\n";
-                values_ss << ind_values << std::fixed << std::setprecision(3) << areaData.get_param_values(iparam)[ival];
+                values_ss << ind_values << std::fixed << std::setprecision(VALUE_DECIMALS) << areaData.get_param_values(iparam)[ival];
                 if (ival != areaData.size()-1) values_ss << "," << std::endl;
             }
 
@@ -152,7 +157,7 @@ std::string DataWriterCOVJSON::assembleCoverages(const std::string& user, const 
             std::string range = TemplatesCOVJSON::range_templ(paramName, shape, axisNames, values, indent);
 
             ranges_ss << range;
-            if (iparam != param_size-1) ranges_ss << ",\n";
+            if (iout != paramIdxs.size()-1) ranges_ss << ",\n";
         }
 
         // assemble coverage

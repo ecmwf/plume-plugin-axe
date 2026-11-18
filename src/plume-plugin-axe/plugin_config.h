@@ -37,6 +37,13 @@ public:
 
     const std::vector<std::string>& users() const {return users_;}
     const std::vector<std::string>& parameters() const {return params_;}
+
+    // indexes (in parameters()) of the params written in the output: if interpolated params
+    // (e.g. "u;hl;5000") are requested, their sources of interpolation (u, v, z) are not written
+    const std::vector<size_t>& outputParameterIdxs() const {return outputParamIdxs_;}
+
+    // names of the params written in the output (same order as outputParameterIdxs())
+    const std::vector<std::string>& outputParameters() const {return outputParams_;}
     
     const std::string& outputStrategy() const {return outputStrategy_;}
 
@@ -68,6 +75,10 @@ private:
 
     // parameters
     std::vector<std::string> params_;
+
+    // parameters written in the output (indexes in params_, and names)
+    std::vector<size_t> outputParamIdxs_;
+    std::vector<std::string> outputParams_;
 
     // users
     std::vector<std::string> users_;
