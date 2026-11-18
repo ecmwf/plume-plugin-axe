@@ -120,7 +120,34 @@ Each entry is one of the following shapes (shapes can be mixed in the same reque
         {"name": "v", "type": "ATLAS_FIELD", "height": 5000},
         {"name": "TSTEP", "type": "DOUBLE"}
         ```
+  - Parameters requested at a height (e.g. `u` at 5000 m, written as `u;hl;5000`) also need `u`, `v` and `z` in the plugin `"parameters"`, as sources of the interpolation. In that case `u`, `v` and `z` themselves are not written in the output.
+  - Parameter values are written with 6 decimals.
   - Combining `algorithm` with `lat`/`lon`/`radius` is an error. A top-level `track` key is no longer accepted: use the `"track"` algorithm.
+
+# Visualising track extractions
+`src/experimental/scripts/plot_track_extraction.py` plots the CovJSON output of a single `"track"` circle.
+It needs numpy, matplotlib, cartopy and Pillow (e.g. a conda environment with earthkit).
+
+```bash
+S=src/experimental/scripts/plot_track_extraction.py
+C=plume-config.json                                   # configuration used for the run
+D=plume_plugins_output-<expid>-20261004-00            # CovJSON output directory
+
+# animated GIF of two-panel frames (map + storm-relative zoom), hourly (TSTEP=200 s, runs_every=2);
+# add --keep-images to also keep the frame PNGs in map_ws5000/
+python $S map ws5000 --config $C --data-dir $D --skip-frames 8
+# multi-panel time series: min surface pressure, max wind, mean tcw/sst, drift of the pressure minimum
+python $S time --config $C --data-dir $D
+# azimuthal mean against distance from the track centre and time
+python $S radius sp --config $C --data-dir $D --bin-width 25
+```
+
+- Parameters: the fields in the files (`tcw`, `sst`, `lnsp`, `u;hl;5000`, ...), plus `sp` (surface pressure [hPa]) and
+  `ws;hl;<h>` (wind speed). Height-interpolated names also have short aliases (`ws5000`, `u5000`, `v5000`).
+- The run start date is read from the `--data-dir` name (`...-YYYYMMDD-HH`) unless `--start-date` is given;
+  `--tstep` defaults to 200 s. Products are written to `--output-dir` (default: current directory).
+- Colour limits default to the 1st-99th percentile of the plotted data (`--vmin`/`--vmax`); GIF rate `--fps` (default 10).
+- With many frames the GIF can be large: `--skip-frames` is recommended.
 
 # Testing
 To test the installation:
